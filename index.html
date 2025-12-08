@@ -447,6 +447,28 @@
         margin-top: 12px;
       }
     }
+    /* 統一輸入欄位與下拉選單的高度與外觀 */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  height: 40px;              /* 統一高度 */
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+/* 移除各瀏覽器預設的 select 樣式，改用上面統一的樣式 */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
   </style>
 </head>
 <body>
@@ -1489,4 +1511,5 @@
   </script>
 </body>
 </html>
+
 
