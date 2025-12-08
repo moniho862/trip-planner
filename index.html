@@ -356,6 +356,92 @@
       color: #111827;
     }
 
+    /* ===== 航班卡片樣式 ===== */
+    .flight-card-wrap {
+      margin-top: 8px;
+    }
+
+    .flight-card {
+      position: relative;
+      border-radius: 22px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #f9fafb;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+    }
+
+    .flight-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .flight-card-top-left {
+      font-weight: 600;
+    }
+
+    .flight-card-top-right {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.25);
+      font-size: 11px;
+    }
+
+    .flight-card-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .flight-airport {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .flight-airport-label {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .flight-plane-icon {
+      font-size: 22px;
+      padding: 0 10px;
+    }
+
+    .flight-card-bottom {
+      margin-top: 6px;
+      font-size: 12px;
+      opacity: 0.95;
+    }
+
+    .flight-card-note {
+      margin-top: 2px;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .flight-delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(248, 113, 113, 0.9);
+      color: #fee2e2;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
     @media (min-width: 768px) {
       .app {
         margin-top: 12px;
@@ -407,14 +493,13 @@
       </div>
       <div class="row">
         <div class="col">
-          <label class="small-label">目的地城市</label>
-          <input id="destinationInput" placeholder="例如：Tokyo" />
+          <label class="small-label">目的地城市 / 區域</label>
+          <input id="destinationInput" placeholder="例如：東京、歐洲…" />
         </div>
         <div class="col">
           <label class="small-label">主要貨幣</label>
           <select id="currencyInput">
             <option value="JPY">JPY 日圓</option>
-            <option value="KRW">KRW 韓元</option>
             <option value="TWD">TWD 新台幣</option>
             <option value="HKD">HKD 港幣</option>
             <option value="USD">USD 美元</option>
@@ -464,6 +549,9 @@
   </nav>
 
   <script>
+    // ====== Aviationstack API 設定（請改成你自己的 key） ======
+    const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
+
     // ====== 資料結構 / 儲存 ======
     const STORAGE_KEY = "tripPlanner_multi_v1";
 
@@ -475,13 +563,13 @@
         currency: "JPY",
         startDate: "",
         daysCount: 4,
-        days: [],              // {id,label,date}
+        days: [],
         activeDayId: null,
-        flights: [],           // {id,date,from,to,flightNo,time,note}
-        checklist: [],         // {id,text,done}
-        itinerary: {},         // dayId => [ {id,time,title,note} ]
-        expenses: [],          // {id,date,method,amount,category,note}
-        shopping: []           // {id,name,price,bought,note}
+        flights: [],
+        checklist: [],
+        itinerary: {},
+        expenses: [],
+        shopping: []
       };
     }
 
@@ -489,7 +577,6 @@
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) {
-          // 初次使用建立一個空旅程
           const trip = createEmptyTrip("新旅程 1");
           regenerateDays(trip);
           return { trips: [trip], activeTripId: trip.id };
@@ -557,6 +644,53 @@
     function formatAmount(amount, currency) {
       if (amount == null || isNaN(amount)) return "-";
       return currency + " " + amount.toFixed(0);
+    }
+
+    // ====== 依航班號從 aviationstack 查資料 ======
+    async function fetchFlightInfoByNumber(flightNo) {
+      if (!AVIATIONSTACK_KEY || AVIATIONSTACK_KEY === "YOUR_ACCESS_KEY_HERE") {
+        throw new Error("尚未設定 Aviationstack API Key");
+      }
+
+      const cleanNo = flightNo.trim().toUpperCase().replace(/\s+/g, "");
+      if (!cleanNo) {
+        throw new Error("請先輸入班機號");
+      }
+
+      const url =
+        "https://api.aviationstack.com/v1/flights" +
+        "?access_key=" + encodeURIComponent(AVIATIONSTACK_KEY) +
+        "&flight_iata=" + encodeURIComponent(cleanNo) +
+        "&limit=1";
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("查詢失敗，HTTP " + res.status);
+      }
+
+      const data = await res.json();
+      if (!data || !data.data || data.data.length === 0) {
+        throw new Error("查無此航班（可能是日期不符或免費方案資料有限）");
+      }
+
+      const f = data.data[0];
+      const dep = f.departure || {};
+      const arr = f.arrival || {};
+
+      let depDate = "";
+      let depTime = "";
+      if (dep.scheduled) {
+        depDate = dep.scheduled.substring(0, 10);
+        depTime = dep.scheduled.substring(11, 16);
+      }
+
+      return {
+        from: dep.iata || dep.airport || "",
+        to: arr.iata || arr.airport || "",
+        date: depDate,
+        time: depTime,
+        status: f.flight_status || ""
+      };
     }
 
     // ====== Header 與旅程設定 ======
@@ -667,7 +801,10 @@
       const trip = getCurrentTrip();
       if (!confirm(`清空「${trip.name}」這個旅程內的所有資料？`)) return;
       const newTrip = createEmptyTrip(trip.name);
-      newTrip.id = trip.id; // 保留同一個 id
+      newTrip.id = trip.id;
+      newTrip.currency = trip.currency;
+      newTrip.startDate = trip.startDate;
+      newTrip.daysCount = trip.daysCount;
       regenerateDays(newTrip);
       const idx = root.trips.findIndex(t => t.id === trip.id);
       root.trips[idx] = newTrip;
@@ -677,7 +814,7 @@
     });
 
     // ====== 底部 Tab 控制 ======
-    let currentTab = "itinerary"; // itinerary / prep / flights / expenses / shopping
+    let currentTab = "itinerary";
     const bottomTabs = document.querySelectorAll(".bottom-tab");
 
     bottomTabs.forEach(tab => {
@@ -780,7 +917,7 @@
               <input id="itTime" placeholder="時間（例如 09:00）" />
             </div>
             <div class="col">
-              <input id="itTitle" placeholder="行程名稱（例如：淺草寺）" />
+              <input id="itTitle" placeholder="行程名稱（例如：羅浮宮）" />
             </div>
           </div>
           <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
@@ -833,7 +970,7 @@
             <div class="small-label">新增一項行前準備</div>
             <div class="row">
               <div class="col">
-                <input id="prepInput" placeholder="例如：辦旅遊保險、換日幣、買網卡…" />
+                <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
               </div>
               <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
             </div>
@@ -917,20 +1054,27 @@
                 <input type="date" id="flightDate" />
               </div>
               <div class="col">
-                <input id="flightNo" placeholder="班機號（例如：CX520）" />
+                <input id="flightNo" placeholder="班機號（例如：BR87）" />
+              </div>
+            </div>
+
+            <div style="margin:4px 0 8px; text-align:right;">
+              <button class="btn btn-ghost btn-sm" id="fillFlightFromApiBtn">
+                由航班資料庫帶入
+              </button>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <input id="flightFrom" placeholder="出發地（例如：TPE）" />
+              </div>
+              <div class="col">
+                <input id="flightTo" placeholder="抵達地（例如：CDG）" />
               </div>
             </div>
             <div class="row">
               <div class="col">
-                <input id="flightFrom" placeholder="出發地（例如：HKG）" />
-              </div>
-              <div class="col">
-                <input id="flightTo" placeholder="抵達地（例如：NRT）" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <input id="flightTime" placeholder="起飛時間（例如：09:05）" />
+                <input id="flightTime" placeholder="起飛時間（例如：23:40）" />
               </div>
               <div class="col">
                 <input id="flightNote" placeholder="備註（去程／回程…）" />
@@ -945,6 +1089,50 @@
 
       mainView.innerHTML = html;
       renderFlightList(trip);
+
+      const fillBtn = document.getElementById("fillFlightFromApiBtn");
+      fillBtn.addEventListener("click", async () => {
+        const noInput = document.getElementById("flightNo");
+        const fromInput = document.getElementById("flightFrom");
+        const toInput = document.getElementById("flightTo");
+        const timeInput = document.getElementById("flightTime");
+        const noteInput = document.getElementById("flightNote");
+        const dateInput = document.getElementById("flightDate");
+
+        const flightNo = noInput.value;
+
+        if (!flightNo.trim()) {
+          alert("請先輸入班機號，例如 BR87");
+          return;
+        }
+
+        fillBtn.disabled = true;
+        const originalText = fillBtn.textContent;
+        fillBtn.textContent = "查詢中…";
+
+        try {
+          const info = await fetchFlightInfoByNumber(flightNo);
+
+          if (info.from) fromInput.value = info.from;
+          if (info.to) toInput.value = info.to;
+          if (info.time) timeInput.value = info.time;
+          if (info.date && !dateInput.value) dateInput.value = info.date;
+
+          if (info.status) {
+            if (!noteInput.value) {
+              noteInput.value = "狀態：" + info.status;
+            } else if (!noteInput.value.includes("狀態：")) {
+              noteInput.value += "（狀態：" + info.status + "）";
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          alert("查詢失敗：「" + err.message + "」\n\n可能原因：班機號錯誤、日期不符、或超過免費額度。");
+        } finally {
+          fillBtn.disabled = false;
+          fillBtn.textContent = originalText;
+        }
+      });
 
       document.getElementById("addFlightBtn").addEventListener("click", () => {
         const date = document.getElementById("flightDate").value;
@@ -976,26 +1164,49 @@
         return;
       }
 
-      let html = `<div class="list">`;
+      let html = "";
       trip.flights
         .slice()
         .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
         .forEach(f => {
+          const dateText = f.date ? formatDateMMDD(f.date) : "";
+          const timeText = f.time || "";
+          const fromCode = f.from || "???";
+          const toCode = f.to || "???";
+          const note = f.note || "";
+
           html += `
-            <div class="list-item">
-              <div class="list-main">
-                <div class="list-meta">${f.date ? formatDateMMDD(f.date) : ""} ${f.time || ""}</div>
-                <div class="list-title">
-                  ${f.from || "???"} → ${f.to || "???"}
-                  ${f.flightNo ? `<span class="badge">${f.flightNo}</span>` : ""}
+            <div class="flight-card-wrap">
+              <div class="flight-card">
+                <button class="flight-delete-btn" data-fl-del="${f.id}">✕</button>
+                <div class="flight-card-top">
+                  <div class="flight-card-top-left">
+                    ${dateText ? dateText : ""}
+                    ${timeText ? " · " + timeText : ""}
+                  </div>
+                  <div class="flight-card-top-right">
+                    FLIGHT${f.flightNo ? " · " + f.flightNo : ""}
+                  </div>
                 </div>
-                ${f.note ? `<div class="list-note">${f.note}</div>` : ""}
+                <div class="flight-card-main">
+                  <div>
+                    <div class="flight-airport">${fromCode}</div>
+                    <div class="flight-airport-label">FROM</div>
+                  </div>
+                  <div class="flight-plane-icon">✈️</div>
+                  <div style="text-align:right;">
+                    <div class="flight-airport">${toCode}</div>
+                    <div class="flight-airport-label">TO</div>
+                  </div>
+                </div>
+                <div class="flight-card-bottom">
+                  ${note ? `<div class="flight-card-note">${note}</div>` : ""}
+                </div>
               </div>
-              <button class="btn btn-danger btn-icon" data-fl-del="${f.id}">✕</button>
             </div>
           `;
         });
-      html += `</div>`;
+
       container.innerHTML = html;
 
       container.querySelectorAll("[data-fl-del]").forEach(btn => {
