@@ -584,27 +584,31 @@
 
     // ====== 匯率 API 設定（exchangerate.host） ======
     async function fetchFxRateToTwd(currency) {
-      if (!currency || currency === "TWD") {
-        throw new Error("主要貨幣為 TWD，不需換匯");
-      }
-      const url =
-        "https://api.exchangerate.host/latest?base=" +
-        encodeURIComponent(currency) +
-        "&symbols=TWD";
+  if (!currency || currency === "TWD") {
+    throw new Error("主要貨幣為 TWD，不需換匯");
+  }
 
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error("匯率查詢失敗，HTTP " + res.status);
-      }
-      const data = await res.json();
-      if (!data || !data.rates || typeof data.rates.TWD !== "number") {
-        throw new Error("取得匯率資料失敗");
-      }
-      return {
-        rate: data.rates.TWD,
-        date: data.date || ""
-      };
-    }
+  const url =
+    "https://api.exchangerate.host/convert?from=" +
+    encodeURIComponent(currency) +
+    "&to=TWD";
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error("匯率查詢失敗，HTTP " + res.status);
+  }
+
+  const data = await res.json();
+  // 新版 API 使用 conversion_rate 回傳匯率
+  if (!data || typeof data.conversion_rate !== "number") {
+    throw new Error("取得匯率資料失敗（API 無 conversion_rate）");
+  }
+
+  return {
+    rate: data.conversion_rate,
+    date: data.date || new Date().toISOString().substring(0, 10)
+  };
+}
 
     // ====== 資料結構 / 儲存 ======
     const STORAGE_KEY = "tripPlanner_multi_v1";
@@ -1653,3 +1657,4 @@
   </script>
 </body>
 </html>
+
