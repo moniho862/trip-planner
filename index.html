@@ -66,6 +66,11 @@
       color: var(--text-sub);
     }
 
+    /* 讓右上兩行之間有一點距離 */
+    .top-info > div + div {
+      margin-top: 2px;
+    }
+
     .card {
       background: var(--card-bg);
       border-radius: var(--radius-lg);
@@ -447,28 +452,27 @@
         margin-top: 12px;
       }
     }
+
     /* 統一輸入欄位與下拉選單的高度與外觀 */
-input[type="text"],
-input[type="number"],
-input[type="date"],
-select {
-  width: 100%;
-  height: 40px;              /* 統一高度 */
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  font-size: 13px;
-  box-sizing: border-box;
-}
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      height: 40px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background-color: #f9fafb;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
 
-/* 移除各瀏覽器預設的 select 樣式，改用上面統一的樣式 */
-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
   </style>
 </head>
 <body>
@@ -481,7 +485,10 @@ select {
         </div>
         <div class="subtitle" id="tripNameText">未命名旅程</div>
       </div>
-      <div class="top-info" id="dateInfoText">請先設定日期與天數</div>
+      <div class="top-info">
+        <div id="dateInfoText">請先設定日期與天數</div>
+        <div id="fxHeaderText">匯率尚未設定</div>
+      </div>
     </header>
 
     <!-- 旅程選擇 + 基本設定 -->
@@ -572,8 +579,32 @@ select {
   </nav>
 
   <script>
-    // ====== Aviationstack API 設定（請改成你自己的 key） ======
+    // ====== Aviationstack API 設定（航班查詢；若不用可留空） ======
     const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
+
+    // ====== 匯率 API 設定（exchangerate.host） ======
+    async function fetchFxRateToTwd(currency) {
+      if (!currency || currency === "TWD") {
+        throw new Error("主要貨幣為 TWD，不需換匯");
+      }
+      const url =
+        "https://api.exchangerate.host/latest?base=" +
+        encodeURIComponent(currency) +
+        "&symbols=TWD";
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("匯率查詢失敗，HTTP " + res.status);
+      }
+      const data = await res.json();
+      if (!data || !data.rates || typeof data.rates.TWD !== "number") {
+        throw new Error("取得匯率資料失敗");
+      }
+      return {
+        rate: data.rates.TWD,
+        date: data.date || ""
+      };
+    }
 
     // ====== 資料結構 / 儲存 ======
     const STORAGE_KEY = "tripPlanner_multi_v1";
@@ -592,7 +623,10 @@ select {
         checklist: [],
         itinerary: {},
         expenses: [],
-        shopping: []
+        shopping: [],
+        // 匯率：1 主要貨幣 = fxRateToTwd TWD
+        fxRateToTwd: null,
+        fxRateUpdatedAt: null
       };
     }
 
@@ -604,7 +638,19 @@ select {
           regenerateDays(trip);
           return { trips: [trip], activeTripId: trip.id };
         }
-        return JSON.parse(raw);
+        const obj = JSON.parse(raw);
+
+        // 舊版本資料補上新欄位
+        obj.trips.forEach(t => {
+          if (typeof t.fxRateToTwd === "undefined") {
+            t.fxRateToTwd = null;
+          }
+          if (typeof t.fxRateUpdatedAt === "undefined") {
+            t.fxRateUpdatedAt = null;
+          }
+        });
+
+        return obj;
       } catch (e) {
         console.error(e);
         const trip = createEmptyTrip("新旅程 1");
@@ -731,6 +777,7 @@ select {
     const destinationTag = document.getElementById("destinationTag");
     const tripNameText = document.getElementById("tripNameText");
     const dateInfoText = document.getElementById("dateInfoText");
+    const fxHeaderText = document.getElementById("fxHeaderText");
     const mainView = document.getElementById("mainView");
 
     function renderHeader() {
@@ -738,6 +785,7 @@ select {
       tripNameText.textContent = trip.name || "未命名旅程";
       destinationTag.textContent = trip.destination || "未設定目的地";
 
+      // 上方第一行：天數 + 日期
       if (trip.startDate && trip.daysCount) {
         const start = new Date(trip.startDate);
         const end = new Date(start);
@@ -749,6 +797,21 @@ select {
         dateInfoText.textContent = info;
       } else {
         dateInfoText.textContent = "請先設定日期與天數";
+      }
+
+      // 上方第二行：匯率
+      const cur = trip.currency || "JPY";
+      if (cur === "TWD") {
+        fxHeaderText.textContent = "主要貨幣：TWD 新台幣";
+      } else if (
+        typeof trip.fxRateToTwd === "number" &&
+        !isNaN(trip.fxRateToTwd) &&
+        trip.fxRateToTwd > 0
+      ) {
+        fxHeaderText.textContent =
+          `匯率：1 ${cur} ≈ ${trip.fxRateToTwd.toFixed(2)} TWD`;
+      } else {
+        fxHeaderText.textContent = "匯率尚未設定";
       }
     }
 
@@ -793,7 +856,7 @@ select {
     });
 
     deleteTripBtn.addEventListener("click", () => {
-      if (root.trips.length <= 1) {
+      if (root.trips.Length <= 1) {
         alert("至少要保留一個旅程，無法全部刪光。");
         return;
       }
@@ -810,11 +873,19 @@ select {
       const trip = getCurrentTrip();
       trip.name = tripNameInput.value.trim() || "未命名旅程";
       trip.destination = destinationInput.value.trim();
+      const oldCurrency = trip.currency;
       trip.currency = currencyInput.value;
       trip.startDate = startDateInput.value;
       let n = parseInt(daysInput.value, 10);
       if (isNaN(n)) n = 1;
       trip.daysCount = Math.max(1, Math.min(30, n));
+
+      // 如果更換主要貨幣，清掉舊匯率，避免混淆
+      if (trip.currency !== oldCurrency) {
+        trip.fxRateToTwd = null;
+        trip.fxRateUpdatedAt = null;
+      }
+
       regenerateDays(trip);
       saveRoot();
       renderCurrentMainView();
@@ -1260,6 +1331,27 @@ select {
           <div class="card-header">
             <div class="card-title">旅費管理</div>
           </div>
+
+          <!-- 匯率設定 -->
+          <div style="margin-bottom:10px;">
+            <div class="small-label">匯率設定（${cur} ➜ TWD）</div>
+            <div class="row">
+              <div class="col">
+                <input id="fxRateInput" type="number" step="0.0001"
+                  placeholder="1 ${cur} = ? TWD" />
+              </div>
+              <button class="btn btn-ghost btn-sm" id="fxFetchBtn">從匯率 API 更新</button>
+            </div>
+            <div class="row" style="margin-top:4px;align-items:center;">
+              <div class="col">
+                <div id="fxInfoText" style="font-size:11px;color:var(--text-sub);"></div>
+              </div>
+              <div style="text-align:right;">
+                <button class="btn btn-primary btn-sm" id="fxSaveBtn">儲存匯率</button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <div class="summary-row"><span>總支出</span><strong>${formatAmount(total, cur)}</strong></div>
             <div class="summary-row"><span>現金</span><strong>${formatAmount(cash, cur)}</strong></div>
@@ -1299,6 +1391,56 @@ select {
       `;
 
       mainView.innerHTML = html;
+
+      // 初始化匯率區塊
+      const fxRateInput = document.getElementById("fxRateInput");
+      const fxInfoText = document.getElementById("fxInfoText");
+      if (typeof trip.fxRateToTwd === "number" && trip.fxRateToTwd > 0) {
+        fxRateInput.value = trip.fxRateToTwd.toFixed(4);
+        const updatedText = trip.fxRateUpdatedAt
+          ? `最後更新：${trip.fxRateUpdatedAt}`
+          : "已設定匯率";
+        fxInfoText.textContent = updatedText;
+      } else {
+        fxInfoText.textContent = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）";
+      }
+
+      const fxFetchBtn = document.getElementById("fxFetchBtn");
+      const fxSaveBtn = document.getElementById("fxSaveBtn");
+
+      fxFetchBtn.addEventListener("click", async () => {
+        if (cur === "TWD") {
+          alert("主要貨幣為 TWD，不需換匯。");
+          return;
+        }
+        fxFetchBtn.disabled = true;
+        const original = fxFetchBtn.textContent;
+        fxFetchBtn.textContent = "查詢中…";
+        try {
+          const { rate, date } = await fetchFxRateToTwd(cur);
+          fxRateInput.value = rate.toFixed(4);
+          fxInfoText.textContent = `來自 exchangerate.host（日期：${date}），可自行修改後按儲存。`;
+        } catch (err) {
+          console.error(err);
+          alert("匯率查詢失敗：「" + err.message + "」");
+        } finally {
+          fxFetchBtn.disabled = false;
+          fxFetchBtn.textContent = original;
+        }
+      });
+
+      fxSaveBtn.addEventListener("click", () => {
+        const val = parseFloat(fxRateInput.value);
+        if (isNaN(val) || val <= 0) {
+          alert("請輸入大於 0 的匯率數值");
+          return;
+        }
+        trip.fxRateToTwd = val;
+        trip.fxRateUpdatedAt = new Date().toISOString().substring(0, 19).replace("T", " ");
+        saveRoot();
+        fxInfoText.textContent = `已儲存匯率，1 ${cur} = ${val.toFixed(4)} TWD（更新時間：${trip.fxRateUpdatedAt}）`;
+      });
+
       renderExpenseList(trip);
 
       document.getElementById("addExpenseBtn").addEventListener("click", () => {
@@ -1511,5 +1653,3 @@ select {
   </script>
 </body>
 </html>
-
-
