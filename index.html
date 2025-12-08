@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trip Planner</title>
+  <style>
+    :root {
+      --bg: #e9f3ff;
+      --primary: #3b82f6;
+      --primary-soft: #dbeafe;
+      --card-bg: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #c5e0ff 0%, #f5f7ff 40%, #ffffff 100%);
+      color: var(--text-main);
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 16px 16px 72px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(59,130,246,.1);
+      color: #1d4ed8;
+      margin-left: 6px;
+    }
+
+    .top-info {
+      text-align: right;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+      margin-bottom: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .small-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      font-size: 13px;
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      outline: none;
+      background: #f9fafb;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    textarea {
+      border-radius: 12px;
+      resize: vertical;
+      min-height: 52px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .row > .col {
+      flex: 1;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
+      padding: 7px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .btn-icon {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .btn-sm {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,.8);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+      margin: 8px 0 12px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      padding: 6px 0;
+      border-radius: 999px;
+      cursor: pointer;
+      color: var(--text-sub);
+    }
+
+    .tab.active {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .day-chips {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+
+    .chip {
+      min-width: 68px;
+      padding: 6px 8px;
+      border-radius: 16px;
+      background: #eff6ff;
+      font-size: 11px;
+      text-align: center;
+      cursor: pointer;
+      color: #1d4ed8;
+    }
+
+    .chip strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .chip.active {
+      background: #1d4ed8;
+      color: #eff6ff;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      font-size: 11px;
+      color: #1d4ed8;
+    }
+
+    .list {
+      margin-top: 6px;
+    }
+
+    .list-item {
+      background: #f9fafb;
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 13px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .list-main {
+      flex: 1;
+    }
+
+    .list-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .list-meta {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 2px;
+    }
+
+    .list-note {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+      margin-left: 4px;
+    }
+
+    .empty {
+      font-size: 12px;
+      color: var(--text-sub);
+      text-align: center;
+      padding: 12px 4px 4px;
+    }
+
+    /* checklist */
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .check-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .check-text.done {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    /* bottom nav */
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 8px 16px 12px;
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid rgba(209,213,219,.8);
+    }
+
+    .bottom-tabs {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .bottom-tab {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      padding: 6px 0 4px;
+      border-radius: 999px;
+      color: #6b7280;
+      cursor: pointer;
+    }
+
+    .bottom-tab span {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .bottom-tab.active {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-top: 4px;
+      color: var(--text-sub);
+    }
+
+    .summary-row strong {
+      color: #111827;
+    }
+
+    @media (min-width: 768px) {
+      .app {
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <div class="title">
+          Trip Planner
+          <span class="tag" id="destinationTag">未設定目的地</span>
+        </div>
+        <div class="subtitle" id="tripNameText">未命名旅程</div>
+      </div>
+      <div class="top-info" id="dateInfoText">請先設定日期與天數</div>
+    </header>
+
+    <!-- 旅程選擇 + 基本設定 -->
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">旅程設定</div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label class="small-label">選擇旅程</label>
+          <select id="tripSelect"></select>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="newTripBtn">＋ 新旅程</button>
+      </div>
+
+      <div class="row" style="margin-bottom:2px;">
+        <button class="btn btn-danger btn-sm" id="deleteTripBtn">刪除目前旅程</button>
+        <div style="font-size:11px;color:var(--text-sub);">
+          * 刪除後無法復原，適合刪除測試用旅程
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:8px 0 10px;">
+
+      <div class="row">
+        <div class="col">
+          <label class="small-label">旅程名稱</label>
+          <input id="tripNameInput" placeholder="例如：東京 5 日自由行" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label class="small-label">目的地城市</label>
+          <input id="destinationInput" placeholder="例如：Tokyo" />
+        </div>
+        <div class="col">
+          <label class="small-label">主要貨幣</label>
+          <select id="currencyInput">
+            <option value="JPY">JPY 日圓</option>
+            <option value="KRW">KRW 韓元</option>
+            <option value="TWD">TWD 新台幣</option>
+            <option value="HKD">HKD 港幣</option>
+            <option value="USD">USD 美元</option>
+            <option value="EUR">EUR 歐元</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label class="small-label">出發日期</label>
+          <input type="date" id="startDateInput" />
+        </div>
+        <div class="col">
+          <label class="small-label">天數</label>
+          <input type="number" id="daysInput" min="1" max="30" value="4" />
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <button class="btn btn-primary" id="applyTripBtn">套用變更</button>
+        <button class="btn btn-ghost" id="resetBtn">清空本旅程資料</button>
+      </div>
+    </section>
+
+    <!-- 主內容：依底部 tab 切換 -->
+    <div id="mainView"></div>
+  </div>
+
+  <!-- 底部導航 -->
+  <nav class="bottom-nav">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active" data-tab="itinerary">
+        <span>🗺</span>行程
+      </div>
+      <div class="bottom-tab" data-tab="prep">
+        <span>🧳</span>行前
+      </div>
+      <div class="bottom-tab" data-tab="flights">
+        <span>✈️</span>航班
+      </div>
+      <div class="bottom-tab" data-tab="expenses">
+        <span>💰</span>記帳
+      </div>
+      <div class="bottom-tab" data-tab="shopping">
+        <span>🛍</span>購物
+      </div>
+    </div>
+  </nav>
+
+  <script>
+    // ====== 資料結構 / 儲存 ======
+    const STORAGE_KEY = "tripPlanner_multi_v1";
+
+    function createEmptyTrip(name) {
+      return {
+        id: "trip_" + Math.random().toString(36).slice(2, 9),
+        name: name || "新旅程",
+        destination: "",
+        currency: "JPY",
+        startDate: "",
+        daysCount: 4,
+        days: [],              // {id,label,date}
+        activeDayId: null,
+        flights: [],           // {id,date,from,to,flightNo,time,note}
+        checklist: [],         // {id,text,done}
+        itinerary: {},         // dayId => [ {id,time,title,note} ]
+        expenses: [],          // {id,date,method,amount,category,note}
+        shopping: []           // {id,name,price,bought,note}
+      };
+    }
+
+    function loadRoot() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          // 初次使用建立一個空旅程
+          const trip = createEmptyTrip("新旅程 1");
+          regenerateDays(trip);
+          return { trips: [trip], activeTripId: trip.id };
+        }
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error(e);
+        const trip = createEmptyTrip("新旅程 1");
+        regenerateDays(trip);
+        return { trips: [trip], activeTripId: trip.id };
+      }
+    }
+
+    let root = loadRoot();
+
+    function saveRoot() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+      renderHeader();
+      renderTripSelector();
+    }
+
+    function getCurrentTrip() {
+      let t = root.trips.find(trip => trip.id === root.activeTripId);
+      if (!t) {
+        t = root.trips[0];
+        root.activeTripId = t.id;
+      }
+      return t;
+    }
+
+    function regenerateDays(trip) {
+      const start = trip.startDate ? new Date(trip.startDate) : null;
+      const days = [];
+      for (let i = 0; i < trip.daysCount; i++) {
+        let dStr = "";
+        if (start) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          dStr = d.toISOString().substring(0, 10);
+        }
+        const id = "day" + (i + 1);
+        days.push({ id, label: "Day " + (i + 1), date: dStr });
+        if (!trip.itinerary[id]) trip.itinerary[id] = [];
+      }
+      trip.days = days;
+      if (!trip.activeDayId && days.length > 0) {
+        trip.activeDayId = days[0].id;
+      }
+    }
+
+    // ====== 小工具 ======
+    function formatDateMMDD(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      return String(m).padStart(2, "0") + "/" + String(day).padStart(2, "0");
+    }
+
+    function generateId(prefix) {
+      return prefix + "_" + Math.random().toString(36).slice(2, 9);
+    }
+
+    function formatAmount(amount, currency) {
+      if (amount == null || isNaN(amount)) return "-";
+      return currency + " " + amount.toFixed(0);
+    }
+
+    // ====== Header 與旅程設定 ======
+    const tripNameInput = document.getElementById("tripNameInput");
+    const destinationInput = document.getElementById("destinationInput");
+    const currencyInput = document.getElementById("currencyInput");
+    const startDateInput = document.getElementById("startDateInput");
+    const daysInput = document.getElementById("daysInput");
+    const applyTripBtn = document.getElementById("applyTripBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const tripSelect = document.getElementById("tripSelect");
+    const newTripBtn = document.getElementById("newTripBtn");
+    const deleteTripBtn = document.getElementById("deleteTripBtn");
+
+    const destinationTag = document.getElementById("destinationTag");
+    const tripNameText = document.getElementById("tripNameText");
+    const dateInfoText = document.getElementById("dateInfoText");
+    const mainView = document.getElementById("mainView");
+
+    function renderHeader() {
+      const trip = getCurrentTrip();
+      tripNameText.textContent = trip.name || "未命名旅程";
+      destinationTag.textContent = trip.destination || "未設定目的地";
+
+      if (trip.startDate && trip.daysCount) {
+        const start = new Date(trip.startDate);
+        const end = new Date(start);
+        end.setDate(end.getDate() + trip.daysCount - 1);
+        const info =
+          `${trip.daysCount} 天行程｜` +
+          `${formatDateMMDD(trip.startDate)} - ` +
+          `${formatDateMMDD(end.toISOString().substring(0, 10))}`;
+        dateInfoText.textContent = info;
+      } else {
+        dateInfoText.textContent = "請先設定日期與天數";
+      }
+    }
+
+    function initTripInputs() {
+      const trip = getCurrentTrip();
+      tripNameInput.value = trip.name || "";
+      destinationInput.value = trip.destination || "";
+      currencyInput.value = trip.currency || "JPY";
+      startDateInput.value = trip.startDate || "";
+      daysInput.value = trip.daysCount || 4;
+    }
+
+    function renderTripSelector() {
+      const current = getCurrentTrip();
+      tripSelect.innerHTML = "";
+      root.trips.forEach(trip => {
+        const opt = document.createElement("option");
+        opt.value = trip.id;
+        opt.textContent = trip.name || "未命名旅程";
+        if (trip.id === current.id) opt.selected = true;
+        tripSelect.appendChild(opt);
+      });
+    }
+
+    tripSelect.addEventListener("change", () => {
+      root.activeTripId = tripSelect.value;
+      initTripInputs();
+      renderHeader();
+      renderCurrentMainView();
+      saveRoot();
+    });
+
+    newTripBtn.addEventListener("click", () => {
+      const name = "新旅程 " + (root.trips.length + 1);
+      const trip = createEmptyTrip(name);
+      regenerateDays(trip);
+      root.trips.push(trip);
+      root.activeTripId = trip.id;
+      saveRoot();
+      initTripInputs();
+      renderCurrentMainView();
+    });
+
+    deleteTripBtn.addEventListener("click", () => {
+      if (root.trips.length <= 1) {
+        alert("至少要保留一個旅程，無法全部刪光。");
+        return;
+      }
+      const trip = getCurrentTrip();
+      if (!confirm(`確定要刪除「${trip.name}」這個旅程嗎？刪除後無法復原。`)) return;
+      root.trips = root.trips.filter(t => t.id !== trip.id);
+      root.activeTripId = root.trips[0].id;
+      saveRoot();
+      initTripInputs();
+      renderCurrentMainView();
+    });
+
+    applyTripBtn.addEventListener("click", () => {
+      const trip = getCurrentTrip();
+      trip.name = tripNameInput.value.trim() || "未命名旅程";
+      trip.destination = destinationInput.value.trim();
+      trip.currency = currencyInput.value;
+      trip.startDate = startDateInput.value;
+      let n = parseInt(daysInput.value, 10);
+      if (isNaN(n)) n = 1;
+      trip.daysCount = Math.max(1, Math.min(30, n));
+      regenerateDays(trip);
+      saveRoot();
+      renderCurrentMainView();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      const trip = getCurrentTrip();
+      if (!confirm(`清空「${trip.name}」這個旅程內的所有資料？`)) return;
+      const newTrip = createEmptyTrip(trip.name);
+      newTrip.id = trip.id; // 保留同一個 id
+      regenerateDays(newTrip);
+      const idx = root.trips.findIndex(t => t.id === trip.id);
+      root.trips[idx] = newTrip;
+      saveRoot();
+      initTripInputs();
+      renderCurrentMainView();
+    });
+
+    // ====== 底部 Tab 控制 ======
+    let currentTab = "itinerary"; // itinerary / prep / flights / expenses / shopping
+    const bottomTabs = document.querySelectorAll(".bottom-tab");
+
+    bottomTabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        const t = tab.getAttribute("data-tab");
+        if (t === currentTab) return;
+        currentTab = t;
+        bottomTabs.forEach(tb => tb.classList.toggle("active", tb === tab));
+        renderCurrentMainView();
+      });
+    });
+
+    // ====== 行程 Tab ======
+    function renderItineraryView() {
+      const trip = getCurrentTrip();
+
+      if (!trip.days || trip.days.length === 0) {
+        mainView.innerHTML =
+          `<section class="card"><div class="empty">請先在上方設定旅程日期與天數</div></section>`;
+        return;
+      }
+
+      let html = `
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">每日行程</div>
+            <div class="pill">
+              <span>📍</span>
+              <span>${trip.destination || "目的地未設定"}</span>
+            </div>
+          </div>
+          <div class="day-chips">
+      `;
+
+      trip.days.forEach(d => {
+        const isActive = d.id === trip.activeDayId;
+        html += `
+          <div class="chip ${isActive ? "active" : ""}" data-day-id="${d.id}">
+            <strong>${d.label}</strong>
+            <span>${formatDateMMDD(d.date)}</span>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+          <div id="dayContent"></div>
+        </section>
+      `;
+
+      mainView.innerHTML = html;
+
+      document.querySelectorAll(".chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          const id = chip.getAttribute("data-day-id");
+          trip.activeDayId = id;
+          saveRoot();
+          renderItineraryView();
+        });
+      });
+
+      renderDayItinerary(trip);
+    }
+
+    function renderDayItinerary(trip) {
+      const container = document.getElementById("dayContent");
+      const dayId = trip.activeDayId || (trip.days[0] && trip.days[0].id);
+      if (!dayId) {
+        container.innerHTML = `<div class="empty">尚未建立行程日</div>`;
+        return;
+      }
+
+      const list = trip.itinerary[dayId] || [];
+      let listHtml = "";
+
+      if (list.length === 0) {
+        listHtml = `<div class="empty">還沒有安排行程，下面可以新增一筆～</div>`;
+      } else {
+        listHtml = `<div class="list">`;
+        list.forEach(item => {
+          listHtml += `
+            <div class="list-item">
+              <div class="list-main">
+                <div class="list-meta">${item.time || "時間未填寫"}</div>
+                <div class="list-title">${item.title || "未命名行程"}</div>
+                ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
+              </div>
+              <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
+            </div>
+          `;
+        });
+        listHtml += `</div>`;
+      }
+
+      const formHtml = `
+        <div style="margin-top:10px;">
+          <div class="small-label">新增行程項目</div>
+          <div class="row">
+            <div class="col">
+              <input id="itTime" placeholder="時間（例如 09:00）" />
+            </div>
+            <div class="col">
+              <input id="itTitle" placeholder="行程名稱（例如：淺草寺）" />
+            </div>
+          </div>
+          <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
+          <div style="margin-top:8px; text-align:right;">
+            <button class="btn btn-primary" id="addItineraryBtn">＋ 新增行程</button>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = listHtml + formHtml;
+
+      document.getElementById("addItineraryBtn").addEventListener("click", () => {
+        const time = document.getElementById("itTime").value.trim();
+        const title = document.getElementById("itTitle").value.trim();
+        const note = document.getElementById("itNote").value.trim();
+        if (!title && !time && !note) return;
+
+        const item = {
+          id: generateId("it"),
+          time,
+          title: title || "未命名行程",
+          note
+        };
+        if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
+        trip.itinerary[dayId].push(item);
+        saveRoot();
+        renderDayItinerary(trip);
+      });
+
+      container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-del-itinerary");
+          trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== id);
+          saveRoot();
+          renderDayItinerary(trip);
+        });
+      });
+    }
+
+    // ====== 行前 Tab ======
+    function renderPrepView() {
+      const trip = getCurrentTrip();
+      let html = `
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">行前準備清單</div>
+          </div>
+          <div id="prepList"></div>
+          <div style="margin-top:10px;">
+            <div class="small-label">新增一項行前準備</div>
+            <div class="row">
+              <div class="col">
+                <input id="prepInput" placeholder="例如：辦旅遊保險、換日幣、買網卡…" />
+              </div>
+              <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+            </div>
+          </div>
+        </section>
+      `;
+      mainView.innerHTML = html;
+      renderPrepList(trip);
+
+      document.getElementById("addPrepBtn").addEventListener("click", () => {
+        const input = document.getElementById("prepInput");
+        const text = input.value.trim();
+        if (!text) return;
+        trip.checklist.push({
+          id: generateId("prep"),
+          text,
+          done: false
+        });
+        input.value = "";
+        saveRoot();
+        renderPrepList(trip);
+      });
+    }
+
+    function renderPrepList(trip) {
+      const container = document.getElementById("prepList");
+      if (!trip.checklist || trip.checklist.length === 0) {
+        container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
+        return;
+      }
+
+      let html = "";
+      trip.checklist.forEach(item => {
+        html += `
+          <div class="check-row">
+            <input type="checkbox" data-prep-id="${item.id}" ${item.done ? "checked" : ""}/>
+            <div class="check-text ${item.done ? "done" : ""}">${item.text}</div>
+            <button class="btn btn-danger btn-icon" data-prep-del="${item.id}">✕</button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-prep-id]").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const id = cb.getAttribute("data-prep-id");
+          const target = trip.checklist.find(i => i.id === id);
+          if (target) {
+            target.done = cb.checked;
+            saveRoot();
+            renderPrepList(trip);
+          }
+        });
+      });
+
+      container.querySelectorAll("[data-prep-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-prep-del");
+          trip.checklist = trip.checklist.filter(i => i.id !== id);
+          saveRoot();
+          renderPrepList(trip);
+        });
+      });
+    }
+
+    // ====== 航班 Tab ======
+    function renderFlightsView() {
+      const trip = getCurrentTrip();
+      let html = `
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">航班資訊</div>
+          </div>
+          <div id="flightList"></div>
+
+          <div style="margin-top:10px;">
+            <div class="small-label">新增航班</div>
+            <div class="row">
+              <div class="col">
+                <input type="date" id="flightDate" />
+              </div>
+              <div class="col">
+                <input id="flightNo" placeholder="班機號（例如：CX520）" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <input id="flightFrom" placeholder="出發地（例如：HKG）" />
+              </div>
+              <div class="col">
+                <input id="flightTo" placeholder="抵達地（例如：NRT）" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <input id="flightTime" placeholder="起飛時間（例如：09:05）" />
+              </div>
+              <div class="col">
+                <input id="flightNote" placeholder="備註（去程／回程…）" />
+              </div>
+            </div>
+            <div style="margin-top:8px; text-align:right;">
+              <button class="btn btn-primary" id="addFlightBtn">＋ 新增航班</button>
+            </div>
+          </div>
+        </section>
+      `;
+
+      mainView.innerHTML = html;
+      renderFlightList(trip);
+
+      document.getElementById("addFlightBtn").addEventListener("click", () => {
+        const date = document.getElementById("flightDate").value;
+        const no = document.getElementById("flightNo").value.trim();
+        const from = document.getElementById("flightFrom").value.trim();
+        const to = document.getElementById("flightTo").value.trim();
+        const time = document.getElementById("flightTime").value.trim();
+        const note = document.getElementById("flightNote").value.trim();
+        if (!no && !from && !to) return;
+
+        trip.flights.push({
+          id: generateId("fl"),
+          date,
+          flightNo: no || "",
+          from,
+          to,
+          time,
+          note
+        });
+        saveRoot();
+        renderFlightsView();
+      });
+    }
+
+    function renderFlightList(trip) {
+      const container = document.getElementById("flightList");
+      if (!trip.flights || trip.flights.length === 0) {
+        container.innerHTML = `<div class="empty">目前尚未新增航班。</div>`;
+        return;
+      }
+
+      let html = `<div class="list">`;
+      trip.flights
+        .slice()
+        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+        .forEach(f => {
+          html += `
+            <div class="list-item">
+              <div class="list-main">
+                <div class="list-meta">${f.date ? formatDateMMDD(f.date) : ""} ${f.time || ""}</div>
+                <div class="list-title">
+                  ${f.from || "???"} → ${f.to || "???"}
+                  ${f.flightNo ? `<span class="badge">${f.flightNo}</span>` : ""}
+                </div>
+                ${f.note ? `<div class="list-note">${f.note}</div>` : ""}
+              </div>
+              <button class="btn btn-danger btn-icon" data-fl-del="${f.id}">✕</button>
+            </div>
+          `;
+        });
+      html += `</div>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-fl-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-fl-del");
+          trip.flights = trip.flights.filter(f => f.id !== id);
+          saveRoot();
+          renderFlightsView();
+        });
+      });
+    }
+
+    // ====== 記帳 Tab ======
+    function renderExpensesView() {
+      const trip = getCurrentTrip();
+      const cur = trip.currency || "JPY";
+
+      const total = trip.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const cash = trip.expenses
+        .filter(e => e.method === "cash")
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      const card = trip.expenses
+        .filter(e => e.method === "card")
+        .reduce((s, e) => s + (e.amount || 0), 0);
+
+      let html = `
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">旅費管理</div>
+          </div>
+          <div>
+            <div class="summary-row"><span>總支出</span><strong>${formatAmount(total, cur)}</strong></div>
+            <div class="summary-row"><span>現金</span><strong>${formatAmount(cash, cur)}</strong></div>
+            <div class="summary-row"><span>信用卡</span><strong>${formatAmount(card, cur)}</strong></div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="small-label">新增一筆支出</div>
+            <div class="row">
+              <div class="col">
+                <input type="date" id="expDate" />
+              </div>
+              <div class="col">
+                <select id="expMethod">
+                  <option value="cash">現金</option>
+                  <option value="card">信用卡</option>
+                  <option value="other">其他</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <input id="expAmount" type="number" placeholder="金額" />
+              </div>
+              <div class="col">
+                <input id="expCategory" placeholder="分類（餐飲、交通…）" />
+              </div>
+            </div>
+            <input id="expNote" placeholder="備註（店名、刷哪張卡…）" />
+            <div style="margin-top:8px; text-align:right;">
+              <button class="btn btn-primary" id="addExpenseBtn">＋ 新增支出</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;" id="expenseList"></div>
+        </section>
+      `;
+
+      mainView.innerHTML = html;
+      renderExpenseList(trip);
+
+      document.getElementById("addExpenseBtn").addEventListener("click", () => {
+        const date = document.getElementById("expDate").value;
+        const method = document.getElementById("expMethod").value;
+        const amountRaw = document.getElementById("expAmount").value;
+        const category = document.getElementById("expCategory").value.trim();
+        const note = document.getElementById("expNote").value.trim();
+
+        const amount = parseFloat(amountRaw);
+        if (isNaN(amount)) return;
+
+        trip.expenses.push({
+          id: generateId("exp"),
+          date,
+          method,
+          amount,
+          category,
+          note
+        });
+        saveRoot();
+        renderExpensesView();
+      });
+    }
+
+    function renderExpenseList(trip) {
+      const container = document.getElementById("expenseList");
+      if (!trip.expenses || trip.expenses.length === 0) {
+        container.innerHTML = `<div class="empty">目前沒有支出紀錄。</div>`;
+        return;
+      }
+      const cur = trip.currency || "JPY";
+
+      let html = `<div class="list">`;
+      trip.expenses
+        .slice()
+        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+        .forEach(e => {
+          let methodLabel = "其他";
+          if (e.method === "cash") methodLabel = "現金";
+          if (e.method === "card") methodLabel = "信用卡";
+          html += `
+            <div class="list-item">
+              <div class="list-main">
+                <div class="list-meta">${e.date ? formatDateMMDD(e.date) : ""}</div>
+                <div class="list-title">
+                  ${e.category || "未分類"} 
+                  <span class="badge">${methodLabel}</span>
+                  <span class="badge">${formatAmount(e.amount, cur)}</span>
+                </div>
+                ${e.note ? `<div class="list-note">${e.note}</div>` : ""}
+              </div>
+              <button class="btn btn-danger btn-icon" data-exp-del="${e.id}">✕</button>
+            </div>
+          `;
+        });
+      html += `</div>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-exp-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-exp-del");
+          trip.expenses = trip.expenses.filter(e => e.id !== id);
+          saveRoot();
+          renderExpensesView();
+        });
+      });
+    }
+
+    // ====== 購物 Tab ======
+    function renderShoppingView() {
+      const trip = getCurrentTrip();
+      const cur = trip.currency || "JPY";
+      const totalPlan = trip.shopping.reduce((s, i) => s + (i.price || 0), 0);
+      const totalBought = trip.shopping
+        .filter(i => i.bought)
+        .reduce((s, i) => s + (i.price || 0), 0);
+
+      let html = `
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">購物清單</div>
+          </div>
+          <div>
+            <div class="summary-row"><span>計畫購物總額</span><strong>${formatAmount(totalPlan, cur)}</strong></div>
+            <div class="summary-row"><span>已購買金額</span><strong>${formatAmount(totalBought, cur)}</strong></div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="small-label">新增購物項目</div>
+            <input id="shopName" placeholder="品項名稱（例如：CEZANNE 101 號唇膏）" />
+            <div class="row" style="margin-top:4px;">
+              <div class="col">
+                <input id="shopPrice" type="number" placeholder="價格（${cur}）可留白" />
+              </div>
+              <div class="col">
+                <input id="shopNote" placeholder="備註（店家、色號…）" />
+              </div>
+            </div>
+            <div style="margin-top:8px; text-align:right;">
+              <button class="btn btn-primary" id="addShopBtn">＋ 新增品項</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;" id="shopList"></div>
+        </section>
+      `;
+
+      mainView.innerHTML = html;
+      renderShopList(trip);
+
+      document.getElementById("addShopBtn").addEventListener("click", () => {
+        const name = document.getElementById("shopName").value.trim();
+        const priceRaw = document.getElementById("shopPrice").value;
+        const note = document.getElementById("shopNote").value.trim();
+        if (!name && !note) return;
+        const price = parseFloat(priceRaw);
+        trip.shopping.push({
+          id: generateId("shop"),
+          name: name || "未命名品項",
+          price: isNaN(price) ? 0 : price,
+          note,
+          bought: false
+        });
+        saveRoot();
+        renderShoppingView();
+      });
+    }
+
+    function renderShopList(trip) {
+      const container = document.getElementById("shopList");
+      if (!trip.shopping || trip.shopping.length === 0) {
+        container.innerHTML = `<div class="empty">目前沒有購物品項。</div>`;
+        return;
+      }
+      const cur = trip.currency || "JPY";
+
+      let html = `<div class="list">`;
+      trip.shopping.forEach(item => {
+        html += `
+          <div class="list-item">
+            <div class="list-main">
+              <div class="list-title">
+                ${item.name}
+                ${item.bought ? `<span class="badge">已購買</span>` : ""}
+                ${item.price ? `<span class="badge">${formatAmount(item.price, cur)}</span>` : ""}
+              </div>
+              ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
+                ${item.bought ? "取消已買" : "標記已買"}
+              </button>
+              <button class="btn btn-danger btn-icon" data-shop-del="${item.id}">✕</button>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-shop-toggle]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-shop-toggle");
+          const target = trip.shopping.find(i => i.id === id);
+          if (target) {
+            target.bought = !target.bought;
+            saveRoot();
+            renderShoppingView();
+          }
+        });
+      });
+
+      container.querySelectorAll("[data-shop-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-shop-del");
+          trip.shopping = trip.shopping.filter(i => i.id !== id);
+          saveRoot();
+          renderShoppingView();
+        });
+      });
+    }
+
+    // ====== 主畫面切換 ======
+    function renderCurrentMainView() {
+      if (currentTab === "itinerary") {
+        renderItineraryView();
+      } else if (currentTab === "prep") {
+        renderPrepView();
+      } else if (currentTab === "flights") {
+        renderFlightsView();
+      } else if (currentTab === "expenses") {
+        renderExpensesView();
+      } else if (currentTab === "shopping") {
+        renderShoppingView();
+      }
+    }
+
+    // ====== 初始化 ======
+    (function init() {
+      const trip = getCurrentTrip();
+      if (!trip.days || trip.days.length === 0) {
+        regenerateDays(trip);
+      }
+      renderTripSelector();
+      initTripInputs();
+      renderHeader();
+      renderCurrentMainView();
+    })();
+  </script>
+</body>
+</html>
