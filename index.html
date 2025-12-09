@@ -136,7 +136,7 @@
       appearance: none;
     }
 
-    /* 日期與時間欄位統一樣式（手機不再放大） */
+    /* 日期與時間欄位統一樣式（手機不再特別放大） */
     input[type="date"].compact-date,
     input[type="time"].compact-time {
       -webkit-appearance: none;
@@ -340,6 +340,15 @@
     .check-text.done {
       text-decoration: line-through;
       color: #9ca3af;
+    }
+
+    /* 行程卡右側按鈕列：保持同一行 */
+    .list-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-wrap: nowrap;
+      white-space: nowrap;
     }
 
     /* bottom nav */
@@ -1043,53 +1052,23 @@
       renderCurrentMainView();
     });
 
-    // ✅ 改成 async，並在主要貨幣變更後自動更新匯率
-    applyTripBtn.addEventListener("click", async () => {
+    applyTripBtn.addEventListener("click", () => {
       const trip = getCurrentTrip();
-
-      // 更新基本資料
-      trip.name        = tripNameInput.value.trim() || "未命名旅程";
+      trip.name = tripNameInput.value.trim() || "未命名旅程";
       trip.destination = destinationInput.value.trim();
-      const newCurrency = currencyInput.value;
-      trip.currency    = newCurrency;
-      trip.startDate   = startDateInput.value;
-
+      trip.currency = currencyInput.value;
+      trip.startDate = startDateInput.value;
       let n = parseInt(daysInput.value, 10);
       if (isNaN(n)) n = 1;
       trip.daysCount = Math.max(1, Math.min(30, n));
       regenerateDays(trip);
 
-      const upperCur = (newCurrency || "").toUpperCase();
-
-      if (upperCur === "TWD") {
-        // 主要貨幣為 TWD：匯率固定 1，無需查詢
-        trip.exchangeRate = {
-          base: "TWD",
-          target: "TWD",
-          rate: 1,
-          updatedAt: ""
-        };
+      // 調整 exchangeRate 的 base 為目前貨幣，數值沿用
+      if (!trip.exchangeRate) {
+        trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
       } else {
-        try {
-          const result = await fetchRateToTWD(upperCur);
-          trip.exchangeRate = {
-            base: upperCur,
-            target: "TWD",
-            rate: result.rate,
-            updatedAt: result.updatedAt || ""
-          };
-        } catch (err) {
-          console.error(err);
-          alert(
-            "主要貨幣已更新，但自動查詢匯率失敗：\n" +
-            err.message +
-            "\n\n你仍可在「記帳」分頁按「查詢匯率」或手動輸入匯率。"
-          );
-          if (!trip.exchangeRate) trip.exchangeRate = {};
-          trip.exchangeRate.base   = upperCur;
-          trip.exchangeRate.target = "TWD";
-          // rate 先保留原值或 null
-        }
+        trip.exchangeRate.base = trip.currency;
+        trip.exchangeRate.target = "TWD";
       }
 
       saveRoot();
@@ -1190,6 +1169,7 @@
         trip.activeDayId = dayId;
       }
 
+      // === 行前準備 ===
       if (dayId === "prep") {
         let html = `
           <div>
@@ -1226,6 +1206,7 @@
         return;
       }
 
+      // === 每日行程 ===
       const list = trip.itinerary[dayId] || [];
       // 依時間排序
       list.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
@@ -1243,7 +1224,7 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+              <div class="list-actions">
                 <button class="btn btn-ghost btn-sm" data-open-map="${item.id}">地圖</button>
                 <button class="btn btn-ghost btn-sm" data-edit-itinerary="${item.id}">編輯</button>
                 <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
@@ -1272,6 +1253,7 @@
         </div>
       `;
 
+      // 新增區塊在上，已新增行程在下
       container.innerHTML = formHtml + listHtml;
 
       const timeInput = document.getElementById("itTime");
@@ -1280,24 +1262,44 @@
         timeInput.value = parseTimeString(timeInput.value);
       });
 
-      document.getElementById("addItineraryBtn").addEventListener("click", () => {
+      const addBtn = document.getElementById("addItineraryBtn");
+      let editingItemId = null; // null = 新增模式，有值 = 編輯模式
+
+      // 「新增 / 儲存」共用一顆按鈕
+      addBtn.addEventListener("click", () => {
         const time = parseTimeString(document.getElementById("itTime").value);
         const title = document.getElementById("itTitle").value.trim();
         const note = document.getElementById("itNote").value.trim();
+
+        // 什麼都沒填就不動作
         if (!title && !time && !note) return;
 
-        const item = {
-          id: generateId("it"),
-          time,
-          title: title || "未命名行程",
-          note
-        };
-        if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
-        trip.itinerary[dayId].push(item);
+        // 編輯模式：更新原本那一筆
+        if (editingItemId) {
+          const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItemId);
+          if (target) {
+            target.time = time;
+            target.title = title || "未命名行程";
+            target.note = note;
+          }
+        } else {
+          // 新增模式
+          const item = {
+            id: generateId("it"),
+            time,
+            title: title || "未命名行程",
+            note
+          };
+          if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
+          trip.itinerary[dayId].push(item);
+        }
+
+        // 儲存並重繪
         saveRoot();
         renderDayContent(trip);
       });
 
+      // 刪除行程
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-itinerary");
@@ -1323,17 +1325,12 @@
           const id = btn.getAttribute("data-edit-itinerary");
           const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
           if (!item) return;
+
+          editingItemId = id; // 之後按下按鈕就進入「儲存」流程
           document.getElementById("itTime").value = item.time || "";
           document.getElementById("itTitle").value = item.title || "";
           document.getElementById("itNote").value = item.note || "";
-          document.getElementById("addItineraryBtn").textContent = "儲存行程";
-          document.getElementById("addItineraryBtn").onclick = () => {
-            item.time = parseTimeString(document.getElementById("itTime").value);
-            item.title = document.getElementById("itTitle").value.trim() || "未命名行程";
-            item.note = document.getElementById("itNote").value.trim();
-            saveRoot();
-            renderDayContent(trip);
-          };
+          addBtn.textContent = "儲存行程";
         });
       });
     }
@@ -1983,9 +1980,7 @@
               ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
-              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
-                ${item.bought ? "取消已買" : "標記已買"}
-              </button>
+              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">${item.bought ? "取消已買" : "標記已買"}</button>
               <button class="btn btn-danger btn-icon" data-shop-del="${item.id}">✕</button>
             </div>
           </div>
