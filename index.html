@@ -107,7 +107,7 @@
       display: block;
     }
 
-    /* 所有輸入元件字體統一 >=16px，避免 iOS 自動放大 */
+    /* 所有輸入元件字體 >=16px，避免 iOS 自動放大 */
     input,
     select,
     textarea {
@@ -142,7 +142,7 @@
       appearance: none;
     }
 
-    /* 日期與時間欄位：跟其他 input同樣大小，不再縮放 */
+    /* 日期與時間欄位 */
     input[type="date"].compact-date,
     input[type="time"].compact-time {
       -webkit-appearance: none;
@@ -985,7 +985,7 @@
     function initTripInputs() {
       const trip = getCurrentTrip();
       tripNameInput.value = trip.name || "";
-      destinationInput.value = trip.destination || ""
+      destinationInput.value = trip.destination || "";
       currencyInput.value = trip.currency || "JPY";
       startDateInput.value = trip.startDate || "";
       daysInput.value = trip.daysCount || 4;
@@ -1036,14 +1036,14 @@
       renderCurrentMainView();
     });
 
-    // 🔄 套用變更：更新旅程設定，並自動抓匯率
+    // 套用變更 + 自動抓匯率
     applyTripBtn.addEventListener("click", async () => {
       const trip = getCurrentTrip();
-      const newCurrency = currencyInput.value;
+      const oldCurrency = trip.currency || "JPY";
 
-      // 1️⃣ 更新基本旅程資訊
       trip.name = tripNameInput.value.trim() || "未命名旅程";
       trip.destination = destinationInput.value.trim();
+      const newCurrency = currencyInput.value;
       trip.currency = newCurrency;
       trip.startDate = startDateInput.value;
 
@@ -1051,35 +1051,60 @@
       if (isNaN(n)) n = 1;
       trip.daysCount = Math.max(1, Math.min(30, n));
 
-      // 重新產生天數
       regenerateDays(trip);
 
-      // 2️⃣ 重置 exchangeRate 結構
-      trip.exchangeRate = {
-        base: newCurrency,
-        target: "TWD",
-        rate: null,
-        updatedAt: ""
-      };
+      // 重設 / 更新 exchangeRate
+      if (oldCurrency !== newCurrency) {
+        trip.exchangeRate = {
+          base: newCurrency,
+          target: "TWD",
+          rate: null,
+          updatedAt: ""
+        };
 
-      // 3️⃣ 若主要貨幣不是 TWD，自動抓匯率
-      if (newCurrency && newCurrency.toUpperCase() !== "TWD") {
-        try {
-          const result = await fetchRateToTWD(newCurrency);
-          trip.exchangeRate.rate = result.rate;
-          trip.exchangeRate.updatedAt = result.updatedAt || "";
-        } catch (err) {
-          console.error(err);
-          alert(
-            "自動查匯率失敗，可以到「記帳」分頁手動查詢或輸入匯率。\n錯誤訊息：" +
-              err.message
-          );
+        if (newCurrency !== "TWD") {
+          try {
+            const result = await fetchRateToTWD(newCurrency);
+            trip.exchangeRate = {
+              base: newCurrency,
+              target: "TWD",
+              rate: result.rate,
+              updatedAt: result.updatedAt
+            };
+          } catch (err) {
+            console.error(err);
+            alert("已套用基本設定，但自動抓匯率失敗。\n你可以稍後在「記帳」頁面手動查詢或輸入匯率。\n\n原因：" + err.message);
+          }
+        }
+      } else {
+        if (!trip.exchangeRate) {
+          trip.exchangeRate = {
+            base: newCurrency,
+            target: "TWD",
+            rate: null,
+            updatedAt: ""
+          };
+        } else {
+          trip.exchangeRate.base = newCurrency;
+          trip.exchangeRate.target = "TWD";
         }
       }
 
-      // 4️⃣ 儲存並刷新畫面
-      saveRoot();              // 會順便更新 header & 旅程下拉
-      renderCurrentMainView(); // 讓目前 tab 也重新依新貨幣顯示
+      saveRoot();
+      renderCurrentMainView();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      const trip = getCurrentTrip();
+      if (!confirm("確定要清空本旅程的行程、航班、記帳與購物資料嗎？")) return;
+      trip.itinerary = {};
+      trip.flights = [];
+      trip.checklist = [];
+      trip.expenses = [];
+      trip.shopping = [];
+      regenerateDays(trip);
+      saveRoot();
+      renderCurrentMainView();
     });
 
     // ====== 底部 Tab ======
@@ -1248,19 +1273,17 @@
       const noteInput = document.getElementById("itNote");
       const addBtn = document.getElementById("addItineraryBtn");
 
-      // 失焦時自動補 : 與補零
       timeInput.addEventListener("blur", () => {
         if (!timeInput.value) return;
         timeInput.value = parseTimeString(timeInput.value);
       });
 
-      // 只保留一個 onclick，依 editingItineraryId 決定新增 / 編輯
       addBtn.onclick = () => {
         const time = parseTimeString(timeInput.value);
         const title = titleInput.value.trim();
         const note = noteInput.value.trim();
 
-        // 三個欄位都空白就不處理（避免出現「未命名行程」）
+        // 全空白就不做事，避免未命名行程
         if (!time && !title && !note) return;
 
         if (editingItineraryId) {
@@ -1299,7 +1322,6 @@
         });
       });
 
-      // Google 地圖
       container.querySelectorAll("[data-open-map]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-open-map");
@@ -1309,7 +1331,6 @@
         });
       });
 
-      // 編輯行程
       container.querySelectorAll("[data-edit-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-edit-itinerary");
@@ -1563,6 +1584,7 @@
       const trip = getCurrentTrip();
       const cur = trip.currency || "JPY";
 
+      // 原幣總額
       const total = trip.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
       const cash = trip.expenses
         .filter(e => e.method === "cash")
@@ -1571,6 +1593,7 @@
         .filter(e => e.method === "card")
         .reduce((s, e) => s + (e.amount || 0), 0);
 
+      // 匯率
       const rateObj = trip.exchangeRate;
       const useableRate =
         rateObj &&
@@ -1581,13 +1604,34 @@
           ? rateObj.rate
           : null;
 
-      const totalTWD = useableRate ? total * useableRate : null;
-      const cashTWD = useableRate ? cash * useableRate : null;
-      const cardTWD = useableRate ? card * useableRate : null;
+      // 取得每筆的 TWD 金額：
+      // 1. 若有 approxTwd，優先用（你手動改的也會吃到）
+      // 2. 若主要貨幣是 TWD，且沒 approxTwd，就直接用 amount
+      // 3. 否則用 amount * 匯率（若有）
+      const getApproxTwdFor = (e) => {
+        if (typeof e.approxTwd === "number" && !isNaN(e.approxTwd)) {
+          return e.approxTwd;
+        }
+        if (cur === "TWD" && typeof e.amount === "number") {
+          return e.amount;
+        }
+        if (useableRate && typeof e.amount === "number") {
+          return e.amount * useableRate;
+        }
+        return 0;
+      };
+
+      const totalTWD = trip.expenses.reduce((s, e) => s + getApproxTwdFor(e), 0);
+      const cashTWD = trip.expenses
+        .filter(e => e.method === "cash")
+        .reduce((s, e) => s + getApproxTwdFor(e), 0);
+      const cardTWD = trip.expenses
+        .filter(e => e.method === "card")
+        .reduce((s, e) => s + getApproxTwdFor(e), 0);
 
       let rateInfoTextMsg = "";
       if (cur === "TWD") {
-        rateInfoTextMsg = "主要貨幣為 TWD，無需設定匯率。";
+        rateInfoTextMsg = "主要貨幣為 TWD，總計即為 TWD 金額，可選擇是否填寫約當欄位。";
       } else if (useableRate) {
         rateInfoTextMsg = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(2)} TWD`;
       } else {
@@ -1619,7 +1663,7 @@
               <div class="expense-summary-title">總支出（${cur}）</div>
               <div class="expense-summary-amount">${total.toFixed(0)}</div>
               <div class="expense-summary-sub">
-                ${totalTWD != null ? `約 TWD ${totalTWD.toFixed(0)}` : "未設定匯率，暫無 TWD 金額"}
+                約 TWD ${totalTWD.toFixed(0)}
               </div>
             </div>
             <div class="expense-summary-split">
@@ -1627,7 +1671,7 @@
                 <div class="expense-summary-col-label">現金</div>
                 <div class="expense-summary-col-amount">${cash.toFixed(0)}</div>
                 <div class="expense-summary-col-sub">
-                  ${cashTWD != null ? `約 TWD ${cashTWD.toFixed(0)}` : ""}
+                  約 TWD ${cashTWD.toFixed(0)}
                 </div>
               </div>
               <div class="expense-summary-divider"></div>
@@ -1635,7 +1679,7 @@
                 <div class="expense-summary-col-label">信用卡</div>
                 <div class="expense-summary-col-amount">${card.toFixed(0)}</div>
                 <div class="expense-summary-col-sub">
-                  ${cardTWD != null ? `約 TWD ${cardTWD.toFixed(0)}` : ""}
+                  約 TWD ${cardTWD.toFixed(0)}
                 </div>
               </div>
             </div>
@@ -1769,7 +1813,7 @@
       const expNote = document.getElementById("expNote");
       const addExpenseBtn = document.getElementById("addExpenseBtn");
 
-      // 新增 / 編輯支出，共用一個 handler
+      // 新增 / 編輯支出
       addExpenseBtn.onclick = () => {
         const date = expDate.value;
         const method = expMethod.value;
@@ -1782,7 +1826,9 @@
 
         let approxTwd = !isNaN(approxTwdInputVal)
           ? approxTwdInputVal
-          : (useableRate ? amount * useableRate : null);
+          : (cur === "TWD"
+              ? amount
+              : (useableRate ? amount * useableRate : null));
 
         if (editingExpenseId) {
           const target = trip.expenses.find(e => e.id === editingExpenseId);
@@ -1883,7 +1929,6 @@
         });
       });
 
-      // 編輯支出
       container.querySelectorAll("[data-exp-edit]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-exp-edit");
