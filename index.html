@@ -553,7 +553,7 @@
     <div id="mainView"></div>
   </div>
 
-  <!-- 底部導航：已移除獨立「行前」，改在每日行程裡 -->
+  <!-- 底部導航 -->
   <nav class="bottom-nav">
     <div class="bottom-tabs">
       <div class="bottom-tab active" data-tab="itinerary">
@@ -573,7 +573,6 @@
 
   <script>
     // ====== 匯率 API：使用 open.er-api.com，免註冊免 key ======
-    // 取得 baseCurrency -> targetCurrency 的匯率
     async function fetchRateToTWD(baseCurrency) {
       const base = (baseCurrency || "").toUpperCase();
       if (!base) throw new Error("尚未設定主要貨幣");
@@ -593,7 +592,6 @@
       }
       return {
         rate: data.rates.TWD,
-        // 直接存 UTC 更新時間字串
         updatedAt: data.time_last_update_utc || ""
       };
     }
@@ -610,13 +608,13 @@
         startDate: "",
         daysCount: 4,
         days: [],
-        activeDayId: null,   // "prep" 或 "day1"...
+        activeDayId: null,
         flights: [],
         checklist: [],
         itinerary: {},
         expenses: [],
         shopping: [],
-        exchangeRate: {      // 主要貨幣兌 TWD 的匯率
+        exchangeRate: {
           base: "JPY",
           target: "TWD",
           rate: null,
@@ -699,7 +697,6 @@
       }
       trip.days = days;
       if (!trip.activeDayId) {
-        // 預設先看 Day 1（行前可自行點）
         if (days.length > 0) trip.activeDayId = days[0].id;
       }
     }
@@ -723,7 +720,7 @@
       return currency + " " + amount.toFixed(0);
     }
 
-    // ====== 依航班號從 aviationstack 查資料（你已經有 key 了就放這裡） ======
+    // ====== 航班查詢（aviationstack） ======
     const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
 
     async function fetchFlightInfoByNumber(flightNo) {
@@ -808,7 +805,6 @@
         dateInfoText.textContent = "請先設定日期與天數";
       }
 
-      // 匯率顯示
       const ex = trip.exchangeRate;
       if (
         ex &&
@@ -818,9 +814,7 @@
         ex.target === "TWD"
       ) {
         rateInfoText.innerHTML =
-          `<span>匯率：1 ${ex.base} ≈ ${ex.rate.toFixed(2)} TWD` +
-          (ex.updatedAt ? `（${ex.updatedAt}）` : "") +
-          `</span>`;
+          `<span>匯率：1 ${ex.base} ≈ ${ex.rate.toFixed(2)} TWD</span>`;
       } else {
         if ((trip.currency || "").toUpperCase() === "TWD") {
           rateInfoText.innerHTML = `<span>匯率：主要貨幣為 TWD，無需換算</span>`;
@@ -895,7 +889,6 @@
       trip.daysCount = Math.max(1, Math.min(30, n));
       regenerateDays(trip);
 
-      // 更新 exchangeRate.base
       if (!trip.exchangeRate) {
         trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
       } else {
@@ -984,7 +977,8 @@
       document.querySelectorAll(".chip").forEach(chip => {
         chip.addEventListener("click", () => {
           const id = chip.getAttribute("data-day-id");
-          trip.activeDayId = id;
+          const t = getCurrentTrip();
+          t.activeDayId = id;
           saveRoot();
           renderItineraryView();
         });
@@ -1003,19 +997,20 @@
       }
 
       if (dayId === "prep") {
-        // 行前：用原本的 checklist 畫面
+        // 行前：上方新增，下方列表
         let html = `
           <div>
-            <div class="small-label">行前準備清單</div>
-            <div id="prepList"></div>
-            <div style="margin-top:10px;">
-              <div class="small-label">新增一項行前準備</div>
-              <div class="row">
-                <div class="col">
-                  <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
-                </div>
-                <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+            <div class="small-label">新增一項行前準備</div>
+            <div class="row">
+              <div class="col">
+                <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
               </div>
+              <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+            </div>
+
+            <div style="margin-top:10px;">
+              <div class="small-label">已新增項目</div>
+              <div id="prepList"></div>
             </div>
           </div>
         `;
@@ -1054,7 +1049,10 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <button class="btn btn-ghost btn-sm" data-map-itinerary="${item.id}">地圖</button>
+                <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
+              </div>
             </div>
           `;
         });
@@ -1099,12 +1097,32 @@
         renderDayContent(trip);
       });
 
+      // 刪除行程
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-itinerary");
           trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== id);
           saveRoot();
           renderDayContent(trip);
+        });
+      });
+
+      // 地圖導航
+      container.querySelectorAll("[data-map-itinerary]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-map-itinerary");
+          const target = (trip.itinerary[dayId] || []).find(i => i.id === id);
+          if (!target || !target.title) {
+            alert("此行程沒有名稱，無法搜尋地圖。");
+            return;
+          }
+          const parts = [];
+          if (target.title) parts.push(target.title);
+          if (trip.destination) parts.push(trip.destination);
+          const url =
+            "https://www.google.com/maps/search/?api=1&query=" +
+            encodeURIComponent(parts.join(" "));
+          window.open(url, "_blank");
         });
       });
     }
@@ -1115,7 +1133,7 @@
       if (!container) return;
 
       if (!trip.checklist || trip.checklist.length === 0) {
-        container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
+        container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在上方新增。</div>`;
         return;
       }
 
@@ -1365,9 +1383,7 @@
       if (cur === "TWD") {
         rateInfoText = "主要貨幣為 TWD，無需設定匯率。";
       } else if (useableRate) {
-        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(
-          2
-        )} TWD${rateObj.updatedAt ? `（${rateObj.updatedAt}）` : ""}`;
+        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(2)} TWD`;
       } else {
         rateInfoText = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）。";
       }
@@ -1448,7 +1464,6 @@
 
       mainView.innerHTML = html;
 
-      // 匯率欄位：帶入目前儲存的值（可以再手動改）
       const rateInput = document.getElementById("rateInput");
       if (useableRate) {
         rateInput.value = useableRate.toFixed(2);
@@ -1458,7 +1473,6 @@
       const saveRateBtn = document.getElementById("saveRateBtn");
       const rateStatusTextEl = document.getElementById("rateStatusText");
 
-      // 查詢匯率
       fetchBtn.textContent = "查詢匯率";
       fetchBtn.addEventListener("click", async () => {
         if (cur === "TWD") {
@@ -1484,8 +1498,7 @@
           saveRoot();
 
           rateStatusTextEl.textContent =
-            `目前匯率：1 ${cur} ≈ ${rate.toFixed(2)} TWD` +
-            (updatedAt ? `（${updatedAt}）` : "");
+            `目前匯率：1 ${cur} ≈ ${rate.toFixed(2)} TWD`;
           renderHeader();
         } catch (err) {
           console.error(err);
@@ -1496,7 +1509,6 @@
         }
       });
 
-      // 儲存匯率（可手動修改後按）
       saveRateBtn.addEventListener("click", () => {
         const v = parseFloat(rateInput.value);
         if (isNaN(v) || v <= 0) {
@@ -1524,7 +1536,7 @@
         saveRoot();
 
         rateStatusTextEl.textContent =
-          `目前匯率：1 ${cur} ≈ ${v.toFixed(2)} TWD（${label}）`;
+          `目前匯率：1 ${cur} ≈ ${v.toFixed(2)} TWD`;
         renderHeader();
       });
 
@@ -1634,7 +1646,7 @@
 
           <div style="margin-top:10px;" id="shopList"></div>
         </section>
-     `;
+      `;
 
       mainView.innerHTML = html;
       renderShopList(trip);
@@ -1678,9 +1690,7 @@
               ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
-              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
-                ${item.bought ? "取消已買" : "標記已買"}
-              </button>
+              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">${item.bought ? "取消已買" : "標記已買"}</button>
               <button class="btn btn-danger btn-icon" data-shop-del="${item.id}">✕</button>
             </div>
           </div>
