@@ -1160,39 +1160,40 @@
       }
 
       if (dayId === "prep") {
-        let html = `
-          <div>
-            <div class="small-label">行前準備清單</div>
-            <div id="prepList"></div>
-            <div style="margin-top:10px;">
-              <div class="small-label">新增一項行前準備</div>
-              <div class="row">
-                <div class="col">
-                  <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
-                </div>
-                <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
-              </div>
-            </div>
-          </div>
-        `;
-        container.innerHTML = html;
-        renderPrepList(trip);
+  let html = `
+    <div>
+      <div class="small-label">新增一項行前準備</div>
+      <div class="row">
+        <div class="col">
+          <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
+        </div>
+        <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+      </div>
 
-        document.getElementById("addPrepBtn").addEventListener("click", () => {
-          const input = document.getElementById("prepInput");
-          const text = input.value.trim();
-          if (!text) return;
-          trip.checklist.push({
-            id: generateId("prep"),
-            text,
-            done: false
-          });
-          input.value = "";
-          saveRoot();
-          renderPrepList(trip);
-        });
-        return;
-      }
+      <div style="margin-top:10px;">
+        <div class="small-label">行前準備清單</div>
+        <div id="prepList"></div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+  renderPrepList(trip);
+
+  document.getElementById("addPrepBtn").addEventListener("click", () => {
+    const input = document.getElementById("prepInput");
+    const text = input.value.trim();
+    if (!text) return;
+    trip.checklist.push({
+      id: generateId("prep"),
+      text,
+      done: false
+    });
+    input.value = "";
+    saveRoot();
+    renderPrepList(trip);
+  });
+  return;
+}
 
       const list = trip.itinerary[dayId] || [];
       // 依時間排序
@@ -1240,7 +1241,7 @@
         </div>
       `;
 
-      container.innerHTML = listHtml + formHtml;
+      container.innerHTML = formHtml + listHtml;
 
       const timeInput = document.getElementById("itTime");
       timeInput.addEventListener("blur", () => {
@@ -2011,4 +2012,5 @@
   </script>
 </body>
 </html>
+
 
