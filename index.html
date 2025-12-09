@@ -1211,7 +1211,7 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm" data-open-map="${item.id}">地圖</button>
                 <button class="btn btn-ghost btn-sm" data-edit-itinerary="${item.id}">編輯</button>
                 <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
@@ -2011,3 +2011,4 @@
   </script>
 </body>
 </html>
+
