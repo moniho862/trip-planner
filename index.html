@@ -1037,42 +1037,49 @@
     });
 
     applyTripBtn.addEventListener("click", () => {
-      const trip = getCurrentTrip();
-      trip.name = tripNameInput.value.trim() || "未命名旅程";
-      trip.destination = destinationInput.value.trim();
-      trip.currency = currencyInput.value;
-      trip.startDate = startDateInput.value;
-      let n = parseInt(daysInput.value, 10);
-      if (isNaN(n)) n = 1;
-      trip.daysCount = Math.max(1, Math.min(30, n));
-      regenerateDays(trip);
+  const trip = getCurrentTrip();
+  const oldCurrency = trip.currency || "JPY";   // 記住原本的貨幣
 
-      if (!trip.exchangeRate) {
-        trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
-      } else {
-        trip.exchangeRate.base = trip.currency;
-        trip.exchangeRate.target = "TWD";
-      }
+  // 旅程基本資訊
+  trip.name = tripNameInput.value.trim() || "未命名旅程";
+  trip.destination = destinationInput.value.trim();
+  const newCurrency = currencyInput.value;
+  trip.currency = newCurrency;
+  trip.startDate = startDateInput.value;
 
-      saveRoot();
-      renderCurrentMainView();
-    });
+  let n = parseInt(daysInput.value, 10);
+  if (isNaN(n)) n = 1;
+  trip.daysCount = Math.max(1, Math.min(30, n));
 
-    resetBtn.addEventListener("click", () => {
-      const trip = getCurrentTrip();
-      if (!confirm(`清空「${trip.name}」這個旅程內的所有資料？`)) return;
-      const newTrip = createEmptyTrip(trip.name);
-      newTrip.id = trip.id;
-      newTrip.currency = trip.currency;
-      newTrip.startDate = trip.startDate;
-      newTrip.daysCount = trip.daysCount;
-      regenerateDays(newTrip);
-      const idx = root.trips.findIndex(t => t.id === trip.id);
-      root.trips[idx] = newTrip;
-      saveRoot();
-      initTripInputs();
-      renderCurrentMainView();
-    });
+  // 重新產生天數
+  regenerateDays(trip);
+
+  // 🔁 主要貨幣有變更時，把匯率重置（避免沿用舊匯率）
+  if (oldCurrency !== newCurrency) {
+    trip.exchangeRate = {
+      base: newCurrency,
+      target: "TWD",
+      rate: null,        // 清空舊匯率
+      updatedAt: ""
+    };
+  } else {
+    // 沒變更貨幣就維持原本 exchangeRate 結構
+    if (!trip.exchangeRate) {
+      trip.exchangeRate = {
+        base: newCurrency,
+        target: "TWD",
+        rate: null,
+        updatedAt: ""
+      };
+    } else {
+      trip.exchangeRate.base = newCurrency;
+      trip.exchangeRate.target = "TWD";
+    }
+  }
+
+  saveRoot();           // 裡面會順便 renderHeader()
+  renderCurrentMainView();
+});
 
     // ====== 底部 Tab ======
     let currentTab = "itinerary";
@@ -2037,3 +2044,4 @@
   </script>
 </body>
 </html>
+
