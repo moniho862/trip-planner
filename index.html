@@ -25,6 +25,7 @@
       margin: 0;
       background: linear-gradient(180deg, #c5e0ff 0%, #f5f7ff 40%, #ffffff 100%);
       color: var(--text-main);
+      -webkit-text-size-adjust: 100%;
     }
 
     .app {
@@ -106,9 +107,12 @@
       display: block;
     }
 
-    input, select, textarea {
+    /* 所有輸入元件字體統一 >=16px，避免 iOS 自動放大 */
+    input,
+    select,
+    textarea {
       width: 100%;
-      font-size: 16px;   /* ← 改這行 */
+      font-size: 16px;
       padding: 7px 9px;
       border-radius: 999px;
       border: 1px solid #e5e7eb;
@@ -118,7 +122,9 @@
       height: 40px;
     }
 
-    input:focus, select:focus, textarea:focus {
+    input:focus,
+    select:focus,
+    textarea:focus {
       border-color: var(--primary);
       background: #ffffff;
     }
@@ -136,12 +142,12 @@
       appearance: none;
     }
 
-    /* 日期與時間欄位統一樣式（手機不再特別放大） */
+    /* 日期與時間欄位：跟其他 input同樣大小，不再縮放 */
     input[type="date"].compact-date,
     input[type="time"].compact-time {
       -webkit-appearance: none;
       appearance: none;
-      font-size: 13px;
+      font-size: 16px;
       height: 40px;
       padding: 7px 9px;
       border-radius: 999px;
@@ -314,7 +320,6 @@
       padding: 12px 4px 4px;
     }
 
-    /* checklist */
     .check-row {
       display: flex;
       align-items: center;
@@ -334,16 +339,6 @@
       color: #9ca3af;
     }
 
-    /* 行程卡右側按鈕列：保持同一行 */
-    .list-actions {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      flex-wrap: nowrap;
-      white-space: nowrap;
-    }
-
-    /* bottom nav */
     .bottom-nav {
       position: fixed;
       left: 0;
@@ -398,7 +393,7 @@
       color: #111827;
     }
 
-    /* ===== 航班卡片樣式 ===== */
+    /* ===== 航班卡片 ===== */
     .flight-card-wrap {
       margin-top: 8px;
     }
@@ -454,12 +449,6 @@
       opacity: 0.95;
     }
 
-    .flight-card-note {
-      margin-top: 2px;
-      font-size: 11px;
-      opacity: 0.9;
-    }
-
     .flight-extra-line {
       margin-top: 4px;
       font-size: 11px;
@@ -487,7 +476,7 @@
       cursor: pointer;
     }
 
-    /* ===== 旅費總覽卡片 ===== */
+    /* ===== 旅費總覽卡 ===== */
     .expense-summary-card {
       margin: 4px 0 10px;
       padding: 10px 12px;
@@ -553,7 +542,6 @@
       background: rgba(248,250,252,0.4);
     }
 
-    /* 篩選 tab 在記帳裡 */
     .expense-filter-tabs {
       display: flex;
       margin-top: 8px;
@@ -714,6 +702,10 @@
     // ====== 資料結構 / 儲存 ======
     const STORAGE_KEY = "tripPlanner_multi_v2";
 
+    // 編輯狀態（避免重複新增）
+    let editingItineraryId = null;
+    let editingExpenseId = null;
+
     function createEmptyTrip(name) {
       return {
         id: "trip_" + Math.random().toString(36).slice(2, 9),
@@ -855,7 +847,7 @@
       return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
     }
 
-    // IATA → 中文地名（簡單幾個常用）
+    // IATA → 中文地名
     const IATA_TO_CITY_ZH = {
       TPE: "台北",
       TSA: "台北",
@@ -875,7 +867,7 @@
       LGW: "倫敦"
     };
 
-    // ====== 航班 API ======
+    // ====== 航班 API（可視情況關掉） ======
     const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
 
     async function fetchFlightInfoByNumber(flightNo) {
@@ -1055,7 +1047,6 @@
       trip.daysCount = Math.max(1, Math.min(30, n));
       regenerateDays(trip);
 
-      // 調整 exchangeRate 的 base 為目前貨幣，數值沿用
       if (!trip.exchangeRate) {
         trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
       } else {
@@ -1161,7 +1152,6 @@
         trip.activeDayId = dayId;
       }
 
-      // === 行前準備 ===
       if (dayId === "prep") {
         let html = `
           <div>
@@ -1198,9 +1188,7 @@
         return;
       }
 
-      // === 每日行程 ===
       const list = trip.itinerary[dayId] || [];
-      // 依時間排序
       list.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
       let listHtml = "";
@@ -1216,7 +1204,7 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <div class="list-actions">
+              <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm" data-open-map="${item.id}">地圖</button>
                 <button class="btn btn-ghost btn-sm" data-edit-itinerary="${item.id}">編輯</button>
                 <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
@@ -1245,37 +1233,36 @@
         </div>
       `;
 
-      // 新增區塊在上，已新增行程在下
       container.innerHTML = formHtml + listHtml;
 
       const timeInput = document.getElementById("itTime");
+      const titleInput = document.getElementById("itTitle");
+      const noteInput = document.getElementById("itNote");
+      const addBtn = document.getElementById("addItineraryBtn");
+
+      // 失焦時自動補 : 與補零
       timeInput.addEventListener("blur", () => {
         if (!timeInput.value) return;
         timeInput.value = parseTimeString(timeInput.value);
       });
 
-      const addBtn = document.getElementById("addItineraryBtn");
-      let editingItemId = null; // null = 新增模式，有值 = 編輯模式
+      // 只保留一個 onclick，依 editingItineraryId 決定新增 / 編輯
+      addBtn.onclick = () => {
+        const time = parseTimeString(timeInput.value);
+        const title = titleInput.value.trim();
+        const note = noteInput.value.trim();
 
-      // 「新增 / 儲存」共用一顆按鈕
-      addBtn.addEventListener("click", () => {
-        const time = parseTimeString(document.getElementById("itTime").value);
-        const title = document.getElementById("itTitle").value.trim();
-        const note = document.getElementById("itNote").value.trim();
+        // 三個欄位都空白就不處理（避免出現「未命名行程」）
+        if (!time && !title && !note) return;
 
-        // 什麼都沒填就不動作
-        if (!title && !time && !note) return;
-
-        // 編輯模式：更新原本那一筆
-        if (editingItemId) {
-          const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItemId);
+        if (editingItineraryId) {
+          const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItineraryId);
           if (target) {
             target.time = time;
             target.title = title || "未命名行程";
             target.note = note;
           }
         } else {
-          // 新增模式
           const item = {
             id: generateId("it"),
             time,
@@ -1286,12 +1273,15 @@
           trip.itinerary[dayId].push(item);
         }
 
-        // 儲存並重繪
+        editingItineraryId = null;
+        addBtn.textContent = "＋ 新增行程";
+        timeInput.value = "";
+        titleInput.value = "";
+        noteInput.value = "";
         saveRoot();
         renderDayContent(trip);
-      });
+      };
 
-      // 刪除行程
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-itinerary");
@@ -1301,7 +1291,7 @@
         });
       });
 
-      // Google 地圖導覽
+      // Google 地圖
       container.querySelectorAll("[data-open-map]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-open-map");
@@ -1311,17 +1301,16 @@
         });
       });
 
-      // 編輯行程
+      // 編輯行程：只改變按鈕模式 + 填入欄位，不覆蓋 onclick
       container.querySelectorAll("[data-edit-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-edit-itinerary");
           const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
           if (!item) return;
-
-          editingItemId = id; // 之後按下按鈕就進入「儲存」流程
-          document.getElementById("itTime").value = item.time || "";
-          document.getElementById("itTitle").value = item.title || "";
-          document.getElementById("itNote").value = item.note || "";
+          timeInput.value = item.time || "";
+          titleInput.value = item.title || "";
+          noteInput.value = item.note || "";
+          editingItineraryId = id;
           addBtn.textContent = "儲存行程";
         });
       });
@@ -1481,7 +1470,7 @@
         const to = document.getElementById("flightTo").value.trim();
         const time = parseTimeString(document.getElementById("flightTime").value.trim());
         const note = document.getElementById("flightNote").value.trim();
-        if (!no && !from && !to) return;
+        if (!no && !from && !to && !time && !note) return;
 
         trip.flights.push({
           id: generateId("fl"),
@@ -1588,13 +1577,13 @@
       const cashTWD = useableRate ? cash * useableRate : null;
       const cardTWD = useableRate ? card * useableRate : null;
 
-      let rateInfoText = "";
+      let rateInfoTextMsg = "";
       if (cur === "TWD") {
-        rateInfoText = "主要貨幣為 TWD，無需設定匯率。";
+        rateInfoTextMsg = "主要貨幣為 TWD，無需設定匯率。";
       } else if (useableRate) {
-        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(2)} TWD`;
+        rateInfoTextMsg = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(2)} TWD`;
       } else {
-        rateInfoText = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）。";
+        rateInfoTextMsg = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）。";
       }
 
       let html = `
@@ -1613,7 +1602,7 @@
               <button class="btn btn-primary btn-sm" id="saveRateBtn">儲存匯率</button>
             </div>
             <div style="font-size:11px;color:var(--text-sub);" id="rateStatusText">
-              ${rateInfoText}
+              ${rateInfoTextMsg}
             </div>
           </div>
 
@@ -1764,36 +1753,64 @@
         });
       });
 
-      renderExpenseList(trip, useableRate);
+      const expDate = document.getElementById("expDate");
+      const expMethod = document.getElementById("expMethod");
+      const expAmount = document.getElementById("expAmount");
+      const expCategory = document.getElementById("expCategory");
+      const expApproxTwd = document.getElementById("expApproxTwd");
+      const expNote = document.getElementById("expNote");
+      const addExpenseBtn = document.getElementById("addExpenseBtn");
 
-      document.getElementById("addExpenseBtn").addEventListener("click", () => {
-        const date = document.getElementById("expDate").value;
-        const method = document.getElementById("expMethod").value;
-        const amountRaw = document.getElementById("expAmount").value;
-        const category = document.getElementById("expCategory").value.trim();
-        const approxTwdRaw = document.getElementById("expApproxTwd").value;
-        const note = document.getElementById("expNote").value.trim();
+      // 新增 / 編輯支出，共用一個 handler
+      addExpenseBtn.onclick = () => {
+        const date = expDate.value;
+        const method = expMethod.value;
+        const amount = parseFloat(expAmount.value);
+        const category = expCategory.value.trim();
+        const approxTwdInputVal = parseFloat(expApproxTwd.value);
+        const note = expNote.value.trim();
 
-        const amount = parseFloat(amountRaw);
         if (isNaN(amount)) return;
 
-        let approxTwd = parseFloat(approxTwdRaw);
-        if (isNaN(approxTwd) && useableRate) {
-          approxTwd = amount * useableRate;
+        let approxTwd = !isNaN(approxTwdInputVal)
+          ? approxTwdInputVal
+          : (useableRate ? amount * useableRate : null);
+
+        if (editingExpenseId) {
+          const target = trip.expenses.find(e => e.id === editingExpenseId);
+          if (target) {
+            target.date = date;
+            target.method = method;
+            target.amount = amount;
+            target.category = category;
+            target.note = note;
+            target.approxTwd = approxTwd;
+          }
+        } else {
+          trip.expenses.push({
+            id: generateId("exp"),
+            date,
+            method,
+            amount,
+            category,
+            note,
+            approxTwd
+          });
         }
 
-        trip.expenses.push({
-          id: generateId("exp"),
-          date,
-          method,
-          amount,
-          category,
-          note,
-          approxTwd: isNaN(approxTwd) ? null : approxTwd
-        });
+        editingExpenseId = null;
+        addExpenseBtn.textContent = "＋ 新增支出";
+        expDate.value = "";
+        expMethod.value = "cash";
+        expAmount.value = "";
+        expCategory.value = "";
+        expApproxTwd.value = "";
+        expNote.value = "";
         saveRoot();
         renderExpensesView();
-      });
+      };
+
+      renderExpenseList(trip, useableRate);
     }
 
     function renderExpenseList(trip, rateForCalc) {
@@ -1858,7 +1875,7 @@
         });
       });
 
-      // 編輯支出
+      // 編輯支出：只設定 editingExpenseId + 填入欄位，不再覆寫 addExpenseBtn.onclick
       container.querySelectorAll("[data-exp-edit]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-exp-edit");
@@ -1874,19 +1891,7 @@
           document.getElementById("expNote").value = target.note || "";
           const btnAdd = document.getElementById("addExpenseBtn");
           btnAdd.textContent = "儲存支出";
-
-          btnAdd.onclick = () => {
-            const amount = parseFloat(document.getElementById("expAmount").value);
-            const approxTwdVal = parseFloat(document.getElementById("expApproxTwd").value);
-            target.date = document.getElementById("expDate").value;
-            target.method = document.getElementById("expMethod").value;
-            target.amount = isNaN(amount) ? 0 : amount;
-            target.category = document.getElementById("expCategory").value.trim();
-            target.note = document.getElementById("expNote").value.trim();
-            target.approxTwd = isNaN(approxTwdVal) ? null : approxTwdVal;
-            saveRoot();
-            renderExpensesView();
-          };
+          editingExpenseId = id;
         });
       });
     }
@@ -1928,7 +1933,7 @@
 
           <div style="margin-top:10px;" id="shopList"></div>
         </section>
-     `;
+      `;
 
       mainView.innerHTML = html;
       renderShopList(trip);
@@ -1972,7 +1977,9 @@
               ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
-              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">${item.bought ? "取消已買" : "標記已買"}</button>
+              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
+                ${item.bought ? "取消已買" : "標記已買"}
+              </button>
               <button class="btn btn-danger btn-icon" data-shop-del="${item.id}">✕</button>
             </div>
           </div>
@@ -2030,4 +2037,3 @@
   </script>
 </body>
 </html>
-
