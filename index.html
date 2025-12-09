@@ -824,7 +824,9 @@
 
     function formatAmount(amount, currency) {
       if (amount == null || isNaN(amount)) return "-";
-      return currency + " " + amount.toFixed(0);
+      // 先保留兩位小數，再把多餘的 0 拿掉（含小數點）
+      const str = amount.toFixed(2).replace(/\.?0+$/, "");
+      return currency + " " + str;
     }
 
     function parseTimeString(str) {
