@@ -1043,22 +1043,53 @@
       renderCurrentMainView();
     });
 
-    applyTripBtn.addEventListener("click", () => {
+    // ✅ 改成 async，並在主要貨幣變更後自動更新匯率
+    applyTripBtn.addEventListener("click", async () => {
       const trip = getCurrentTrip();
-      trip.name = tripNameInput.value.trim() || "未命名旅程";
+
+      // 更新基本資料
+      trip.name        = tripNameInput.value.trim() || "未命名旅程";
       trip.destination = destinationInput.value.trim();
-      trip.currency = currencyInput.value;
-      trip.startDate = startDateInput.value;
+      const newCurrency = currencyInput.value;
+      trip.currency    = newCurrency;
+      trip.startDate   = startDateInput.value;
+
       let n = parseInt(daysInput.value, 10);
       if (isNaN(n)) n = 1;
       trip.daysCount = Math.max(1, Math.min(30, n));
       regenerateDays(trip);
 
-      if (!trip.exchangeRate) {
-        trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
+      const upperCur = (newCurrency || "").toUpperCase();
+
+      if (upperCur === "TWD") {
+        // 主要貨幣為 TWD：匯率固定 1，無需查詢
+        trip.exchangeRate = {
+          base: "TWD",
+          target: "TWD",
+          rate: 1,
+          updatedAt: ""
+        };
       } else {
-        trip.exchangeRate.base = trip.currency;
-        trip.exchangeRate.target = "TWD";
+        try {
+          const result = await fetchRateToTWD(upperCur);
+          trip.exchangeRate = {
+            base: upperCur,
+            target: "TWD",
+            rate: result.rate,
+            updatedAt: result.updatedAt || ""
+          };
+        } catch (err) {
+          console.error(err);
+          alert(
+            "主要貨幣已更新，但自動查詢匯率失敗：\n" +
+            err.message +
+            "\n\n你仍可在「記帳」分頁按「查詢匯率」或手動輸入匯率。"
+          );
+          if (!trip.exchangeRate) trip.exchangeRate = {};
+          trip.exchangeRate.base   = upperCur;
+          trip.exchangeRate.target = "TWD";
+          // rate 先保留原值或 null
+        }
       }
 
       saveRoot();
@@ -1160,40 +1191,40 @@
       }
 
       if (dayId === "prep") {
-  let html = `
-    <div>
-      <div class="small-label">新增一項行前準備</div>
-      <div class="row">
-        <div class="col">
-          <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
-        </div>
-        <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
-      </div>
+        let html = `
+          <div>
+            <div class="small-label">新增一項行前準備</div>
+            <div class="row">
+              <div class="col">
+                <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
+              </div>
+              <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+            </div>
 
-      <div style="margin-top:10px;">
-        <div class="small-label">行前準備清單</div>
-        <div id="prepList"></div>
-      </div>
-    </div>
-  `;
-  container.innerHTML = html;
-  renderPrepList(trip);
+            <div style="margin-top:10px;">
+              <div class="small-label">行前準備清單</div>
+              <div id="prepList"></div>
+            </div>
+          </div>
+        `;
+        container.innerHTML = html;
+        renderPrepList(trip);
 
-  document.getElementById("addPrepBtn").addEventListener("click", () => {
-    const input = document.getElementById("prepInput");
-    const text = input.value.trim();
-    if (!text) return;
-    trip.checklist.push({
-      id: generateId("prep"),
-      text,
-      done: false
-    });
-    input.value = "";
-    saveRoot();
-    renderPrepList(trip);
-  });
-  return;
-}
+        document.getElementById("addPrepBtn").addEventListener("click", () => {
+          const input = document.getElementById("prepInput");
+          const text = input.value.trim();
+          if (!text) return;
+          trip.checklist.push({
+            id: generateId("prep"),
+            text,
+            done: false
+          });
+          input.value = "";
+          saveRoot();
+          renderPrepList(trip);
+        });
+        return;
+      }
 
       const list = trip.itinerary[dayId] || [];
       // 依時間排序
@@ -2012,5 +2043,3 @@
   </script>
 </body>
 </html>
-
-
