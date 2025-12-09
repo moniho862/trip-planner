@@ -588,10 +588,11 @@
     throw new Error("主要貨幣為 TWD，不需換匯");
   }
 
+  // amount=1，後面算 rate 比較方便
   const url =
     "https://api.exchangerate.host/convert?from=" +
     encodeURIComponent(currency) +
-    "&to=TWD";
+    "&to=TWD&amount=1";
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -599,13 +600,37 @@
   }
 
   const data = await res.json();
-  // 新版 API 使用 conversion_rate 回傳匯率
-  if (!data || typeof data.conversion_rate !== "number") {
-    throw new Error("取得匯率資料失敗（API 無 conversion_rate）");
+
+  if (!data || data.success === false) {
+    throw new Error("取得匯率資料失敗（success=false）");
+  }
+
+  const amount =
+    data.query && typeof data.query.amount === "number"
+      ? data.query.amount
+      : 1;
+
+  let rate;
+
+  // 先試 info.rate
+  if (data.info && typeof data.info.rate === "number") {
+    rate = data.info.rate;
+  }
+  // 有些回傳用 info.quote
+  else if (data.info && typeof data.info.quote === "number") {
+    rate = data.info.quote;
+  }
+  // 再不行就用 result / amount 推回去
+  else if (typeof data.result === "number" && amount) {
+    rate = data.result / amount;
+  }
+
+  if (typeof rate !== "number" || !isFinite(rate)) {
+    throw new Error("取得匯率資料失敗（API 結構異常）");
   }
 
   return {
-    rate: data.conversion_rate,
+    rate,
     date: data.date || new Date().toISOString().substring(0, 10)
   };
 }
@@ -1657,4 +1682,5 @@
   </script>
 </body>
 </html>
+
 
