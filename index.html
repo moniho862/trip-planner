@@ -2,8 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>Trip Planner</title>
   <style>
     :root {
@@ -101,7 +100,11 @@
     }
 
     .card-body {
-      margin-top: 6px;
+      margin-top: 4px;
+    }
+
+    .card.collapsed .card-body {
+      display: none;
     }
 
     .small-label {
@@ -111,23 +114,19 @@
       display: block;
     }
 
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
-      font-size: 14px;
+      font-size: 16px; /* 統一 16px，避免 iOS 放大 */
       padding: 7px 9px;
       border-radius: 999px;
       border: 1px solid #e5e7eb;
       outline: none;
       background: #f9fafb;
       box-sizing: border-box;
-      height: 42px;
+      height: 40px;
     }
 
-    input:focus,
-    select:focus,
-    textarea:focus {
+    input:focus, select:focus, textarea:focus {
       border-color: var(--primary);
       background: #ffffff;
     }
@@ -200,7 +199,7 @@
       border-radius: 999px;
       padding: 4px;
       gap: 4px;
-      margin: 8px 0 8px;
+      margin: 8px 0 12px;
     }
 
     .tab {
@@ -312,6 +311,18 @@
       padding: 12px 4px 4px;
     }
 
+    .actions-inline {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .actions-top-row {
+      display: flex;
+      gap: 4px;
+    }
+
     /* checklist */
     .check-row {
       display: flex;
@@ -330,24 +341,6 @@
     .check-text.done {
       text-decoration: line-through;
       color: #9ca3af;
-    }
-
-    /* itinerary actions */
-    .it-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-    }
-
-    .it-main-btns {
-      display: flex;
-      gap: 4px;
-    }
-
-    /* expense filter tabs in card */
-    .exp-filter-tabs {
-      margin-top: 10px;
     }
 
     /* bottom nav */
@@ -484,11 +477,38 @@
       cursor: pointer;
     }
 
-    @media (max-width: 600px) {
-      input,
-      select,
-      textarea {
-        font-size: 16px; /* 防止 iOS 自動放大 */
+    .expense-tabs {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .expense-tab {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      padding: 6px 0;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .expense-tab.active {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    @media (min-width: 768px) {
+      .app {
+        margin-top: 12px;
       }
     }
   </style>
@@ -509,13 +529,13 @@
       </div>
     </header>
 
-    <!-- 旅程選擇 + 基本設定（可收合） -->
-    <section class="card" id="tripSettingsCard">
+    <!-- 旅程設定：可展開 / 收合 -->
+    <section class="card" id="tripCard">
       <div class="card-header">
         <div class="card-title">旅程設定</div>
-        <button class="btn btn-ghost btn-sm" id="toggleSettingsBtn">收合設定</button>
+        <button class="btn btn-ghost btn-sm" id="toggleTripCardBtn">收合設定</button>
       </div>
-      <div class="card-body" id="tripSettingsBody">
+      <div class="card-body">
         <div class="row">
           <div class="col">
             <label class="small-label">選擇旅程</label>
@@ -573,7 +593,7 @@
       </div>
     </section>
 
-    <!-- 主內容 -->
+    <!-- 主內容：依底部 tab 切換 -->
     <div id="mainView"></div>
   </div>
 
@@ -596,64 +616,7 @@
   </nav>
 
   <script>
-    // ===== 共用小工具 =====
-    function formatDateMMDD(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return "";
-      const m = d.getMonth() + 1;
-      const day = d.getDate();
-      return String(m).padStart(2, "0") + "/" + String(day).padStart(2, "0");
-    }
-
-    function generateId(prefix) {
-      return prefix + "_" + Math.random().toString(36).slice(2, 9);
-    }
-
-    function formatAmount(amount, currency) {
-      if (amount == null || isNaN(amount)) return "-";
-      return currency + " " + amount.toFixed(0);
-    }
-
-    function formatDateTimeShort(d) {
-      if (!(d instanceof Date) || isNaN(d)) return "";
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      return `${y}/${m}/${day} ${hh}:${mm}`;
-    }
-
-    function normalizeTimeString(s) {
-      if (!s) return "";
-      s = String(s).trim();
-      // 如果已經是 HH:MM 就直接回傳
-      if (/^\d{1,2}:\d{2}$/.test(s)) return s;
-      const digits = s.replace(/\D/g, "");
-      if (digits.length === 3) {
-        const hh = "0" + digits[0];
-        const mm = digits.slice(1);
-        return `${hh}:${mm}`;
-      }
-      if (digits.length === 4) {
-        const hh = digits.slice(0, 2);
-        const mm = digits.slice(2);
-        return `${hh}:${mm}`;
-      }
-      return s;
-    }
-
-    function timeToMinutes(str) {
-      str = normalizeTimeString(str);
-      const m = /^(\d{1,2}):(\d{2})$/.exec(str);
-      if (!m) return NaN;
-      const h = parseInt(m[1], 10);
-      const min = parseInt(m[2], 10);
-      return h * 60 + min;
-    }
-
-    // ===== 匯率 API：open.er-api.com =====
+    // ========= 匯率 API =========
     async function fetchRateToTWD(baseCurrency) {
       const base = (baseCurrency || "").toUpperCase();
       if (!base) throw new Error("尚未設定主要貨幣");
@@ -671,63 +634,18 @@
       if (!data.rates || typeof data.rates.TWD !== "number") {
         throw new Error("API 無 TWD 匯率");
       }
-      let label = "";
-      if (data.time_last_update_utc) {
-        const d = new Date(data.time_last_update_utc);
-        if (!isNaN(d)) label = formatDateTimeShort(d);
-      }
       return {
         rate: data.rates.TWD,
-        updatedAt: label
+        updatedAt: data.time_last_update_utc || ""
       };
     }
 
-    // ===== 航班 API =====
-    const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
-
-    async function fetchFlightInfoByNumber(flightNo) {
-      if (!AVIATIONSTACK_KEY || AVIATIONSTACK_KEY === "YOUR_ACCESS_KEY_HERE") {
-        throw new Error("尚未設定 Aviationstack API Key");
-      }
-
-      const cleanNo = flightNo.trim().toUpperCase().replace(/\s+/g, "");
-      if (!cleanNo) throw new Error("請先輸入班機號");
-
-      const url =
-        "https://api.aviationstack.com/v1/flights" +
-        "?access_key=" + encodeURIComponent(AVIATIONSTACK_KEY) +
-        "&flight_iata=" + encodeURIComponent(cleanNo) +
-        "&limit=1";
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("查詢失敗，HTTP " + res.status);
-      const data = await res.json();
-      if (!data || !data.data || data.data.length === 0) {
-        throw new Error("查無此航班");
-      }
-
-      const f = data.data[0];
-      const dep = f.departure || {};
-      const arr = f.arrival || {};
-
-      let depDate = "";
-      let depTime = "";
-      if (dep.scheduled) {
-        depDate = dep.scheduled.substring(0, 10);
-        depTime = dep.scheduled.substring(11, 16);
-      }
-
-      return {
-        from: dep.iata || dep.airport || "",
-        to: arr.iata || arr.airport || "",
-        date: depDate,
-        time: depTime,
-        status: f.flight_status || ""
-      };
-    }
-
-    // ===== 資料結構 / 儲存 =====
+    // ========= 資料結構 =========
     const STORAGE_KEY = "tripPlanner_multi_v2";
+    const TRIP_CARD_COLLAPSE_KEY = "tripPlanner_tripCardCollapsed";
+    let expenseFilterMode = "all"; // all | cash | card
+    let editingExpenseId = null;
+    let editingItineraryId = null;
 
     function createEmptyTrip(name) {
       return {
@@ -766,26 +684,6 @@
           rate: null,
           updatedAt: ""
         };
-      }
-    }
-
-    function regenerateDays(trip) {
-      const start = trip.startDate ? new Date(trip.startDate) : null;
-      const days = [];
-      for (let i = 0; i < trip.daysCount; i++) {
-        let dStr = "";
-        if (start) {
-          const d = new Date(start);
-          d.setDate(d.getDate() + i);
-          dStr = d.toISOString().substring(0, 10);
-        }
-        const id = "day" + (i + 1);
-        days.push({ id, label: "Day " + (i + 1), date: dStr });
-        if (!trip.itinerary[id]) trip.itinerary[id] = [];
-      }
-      trip.days = days;
-      if (!trip.activeDayId) {
-        if (days.length > 0) trip.activeDayId = days[0].id;
       }
     }
 
@@ -831,7 +729,152 @@
       return t;
     }
 
-    // ===== Header / Trip 設定 =====
+    function regenerateDays(trip) {
+      const start = trip.startDate ? new Date(trip.startDate) : null;
+      const days = [];
+      for (let i = 0; i < trip.daysCount; i++) {
+        let dStr = "";
+        if (start) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          dStr = d.toISOString().substring(0, 10);
+        }
+        const id = "day" + (i + 1);
+        days.push({ id, label: "Day " + (i + 1), date: dStr });
+        if (!trip.itinerary[id]) trip.itinerary[id] = [];
+      }
+      trip.days = days;
+      if (!trip.activeDayId) {
+        if (days.length > 0) trip.activeDayId = days[0].id;
+      }
+    }
+
+    // ========= 小工具 =========
+    function formatDateMMDD(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      return String(m).padStart(2, "0") + "/" + String(day).padStart(2, "0");
+    }
+
+    function generateId(prefix) {
+      return prefix + "_" + Math.random().toString(36).slice(2, 9);
+    }
+
+    function formatAmount(amount, currency) {
+      if (amount == null || isNaN(amount)) return "-";
+      return currency + " " + amount.toFixed(0);
+    }
+
+    function parseTimeToMinutes(t) {
+      if (!t) return null;
+      const m = t.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      const h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+      return h * 60 + min;
+    }
+
+    function normalizeTimeInput(str) {
+      // 將 "930" -> "09:30" / "9:3" -> "09:03" 等
+      let s = (str || "").trim();
+      if (!s) return "";
+
+      // 已有冒號
+      if (s.includes(":")) {
+        const [hStr, mStr] = s.split(":");
+        let h = hStr.replace(/\D/g, "");
+        let m = mStr.replace(/\D/g, "");
+        if (!h) h = "0";
+        if (!m) m = "0";
+        h = String(Math.min(23, parseInt(h, 10))).padStart(2, "0");
+        m = String(Math.min(59, parseInt(m, 10))).padStart(2, "0");
+        return `${h}:${m}`;
+      }
+
+      // 純數字
+      s = s.replace(/\D/g, "");
+      if (s.length <= 2) {
+        const h = Math.min(23, parseInt(s, 10));
+        return `${String(h).padStart(2, "0")}:00`;
+      } else if (s.length === 3) {
+        const h = Math.min(23, parseInt(s.slice(0, 1), 10));
+        const m = Math.min(59, parseInt(s.slice(1), 10));
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      } else {
+        const h = Math.min(23, parseInt(s.slice(0, 2), 10));
+        const m = Math.min(59, parseInt(s.slice(2, 4), 10));
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
+    }
+
+    // 簡單機場代碼 -> 中文
+    const AIRPORT_ZH = {
+      TPE: "台北",
+      TSA: "台北松山",
+      KIX: "大阪",
+      NRT: "東京成田",
+      HND: "東京羽田",
+      CDG: "巴黎",
+      AMS: "阿姆斯特丹",
+      ICN: "首爾",
+      GMP: "首爾金浦",
+      LHR: "倫敦希斯洛"
+    };
+
+    // ========= 航班 API =========
+    const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
+
+    async function fetchFlightInfoByNumber(flightNo) {
+      if (!AVIATIONSTACK_KEY || AVIATIONSTACK_KEY === "YOUR_ACCESS_KEY_HERE") {
+        throw new Error("尚未設定 Aviationstack API Key");
+      }
+
+      const cleanNo = flightNo.trim().toUpperCase().replace(/\s+/g, "");
+      if (!cleanNo) {
+        throw new Error("請先輸入班機號");
+      }
+
+      const url =
+        "https://api.aviationstack.com/v1/flights" +
+        "?access_key=" + encodeURIComponent(AVIATIONSTACK_KEY) +
+        "&flight_iata=" + encodeURIComponent(cleanNo) +
+        "&limit=1";
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("查詢失敗，HTTP " + res.status);
+      }
+
+      const data = await res.json();
+      if (!data || !data.data || data.data.length === 0) {
+        throw new Error("查無此航班");
+      }
+
+      const f = data.data[0];
+      const dep = f.departure || {};
+      const arr = f.arrival || {};
+
+      let depDate = "";
+      let depTime = "";
+      if (dep.scheduled) {
+        depDate = dep.scheduled.substring(0, 10);
+        depTime = dep.scheduled.substring(11, 16);
+      }
+
+      return {
+        from: dep.iata || dep.airport || "",
+        to: arr.iata || arr.airport || "",
+        date: depDate,
+        time: depTime,
+        status: f.flight_status || ""
+      };
+    }
+
+    // ========= DOM 元素 =========
     const tripNameInput = document.getElementById("tripNameInput");
     const destinationInput = document.getElementById("destinationInput");
     const currencyInput = document.getElementById("currencyInput");
@@ -842,30 +885,17 @@
     const tripSelect = document.getElementById("tripSelect");
     const newTripBtn = document.getElementById("newTripBtn");
     const deleteTripBtn = document.getElementById("deleteTripBtn");
+
     const destinationTag = document.getElementById("destinationTag");
     const tripNameText = document.getElementById("tripNameText");
     const dateInfoText = document.getElementById("dateInfoText");
     const rateInfoText = document.getElementById("rateInfoText");
     const mainView = document.getElementById("mainView");
-    const toggleSettingsBtn = document.getElementById("toggleSettingsBtn");
-    const tripSettingsBody = document.getElementById("tripSettingsBody");
-    let tripSettingsCollapsed = false;
 
-    function updateTripSettingsToggleUI() {
-      if (tripSettingsCollapsed) {
-        tripSettingsBody.style.display = "none";
-        toggleSettingsBtn.textContent = "展開設定";
-      } else {
-        tripSettingsBody.style.display = "block";
-        toggleSettingsBtn.textContent = "收合設定";
-      }
-    }
+    const tripCard = document.getElementById("tripCard");
+    const toggleTripCardBtn = document.getElementById("toggleTripCardBtn");
 
-    toggleSettingsBtn.addEventListener("click", () => {
-      tripSettingsCollapsed = !tripSettingsCollapsed;
-      updateTripSettingsToggleUI();
-    });
-
+    // ========= Header & 旅程設定 =========
     function renderHeader() {
       const trip = getCurrentTrip();
       tripNameText.textContent = trip.name || "未命名旅程";
@@ -893,9 +923,7 @@
         ex.target === "TWD"
       ) {
         rateInfoText.innerHTML =
-          `<span>匯率：1 ${ex.base} ≈ ${ex.rate.toFixed(2)} TWD` +
-          (ex.updatedAt ? `（${ex.updatedAt}）` : "") +
-          `</span>`;
+          `<span>匯率：1 ${ex.base} ≈ ${ex.rate.toFixed(2)} TWD</span>`;
       } else {
         if ((trip.currency || "").toUpperCase() === "TWD") {
           rateInfoText.innerHTML = `<span>匯率：主要貨幣為 TWD，無需換算</span>`;
@@ -928,6 +956,8 @@
 
     tripSelect.addEventListener("change", () => {
       root.activeTripId = tripSelect.value;
+      editingExpenseId = null;
+      editingItineraryId = null;
       initTripInputs();
       renderHeader();
       renderCurrentMainView();
@@ -954,6 +984,8 @@
       if (!confirm(`確定要刪除「${trip.name}」這個旅程嗎？刪除後無法復原。`)) return;
       root.trips = root.trips.filter(t => t.id !== trip.id);
       root.activeTripId = root.trips[0].id;
+      editingExpenseId = null;
+      editingItineraryId = null;
       saveRoot();
       initTripInputs();
       renderCurrentMainView();
@@ -992,12 +1024,31 @@
       regenerateDays(newTrip);
       const idx = root.trips.findIndex(t => t.id === trip.id);
       root.trips[idx] = newTrip;
+      editingExpenseId = null;
+      editingItineraryId = null;
       saveRoot();
       initTripInputs();
       renderCurrentMainView();
     });
 
-    // ===== 底部 Tab =====
+    // 旅程卡片展開 / 收合
+    function setTripCardCollapsed(collapsed) {
+      if (collapsed) {
+        tripCard.classList.add("collapsed");
+        toggleTripCardBtn.textContent = "展開設定";
+      } else {
+        tripCard.classList.remove("collapsed");
+        toggleTripCardBtn.textContent = "收合設定";
+      }
+      localStorage.setItem(TRIP_CARD_COLLAPSE_KEY, collapsed ? "1" : "0");
+    }
+
+    toggleTripCardBtn.addEventListener("click", () => {
+      const collapsed = !tripCard.classList.contains("collapsed");
+      setTripCardCollapsed(collapsed);
+    });
+
+    // ========= 底部 Tab =========
     let currentTab = "itinerary";
     const bottomTabs = document.querySelectorAll(".bottom-tab");
 
@@ -1007,13 +1058,13 @@
         if (t === currentTab) return;
         currentTab = t;
         bottomTabs.forEach(tb => tb.classList.toggle("active", tb === tab));
+        editingExpenseId = null;
+        editingItineraryId = null;
         renderCurrentMainView();
       });
     });
 
-    // ===== 行程 Tab =====
-    let editingItinerary = { dayId: null, itemId: null };
-
+    // ========= 行程 Tab =========
     function renderItineraryView() {
       const trip = getCurrentTrip();
 
@@ -1061,6 +1112,7 @@
         chip.addEventListener("click", () => {
           const id = chip.getAttribute("data-day-id");
           trip.activeDayId = id;
+          editingItineraryId = null;
           saveRoot();
           renderItineraryView();
         });
@@ -1077,21 +1129,22 @@
         trip.activeDayId = dayId;
       }
 
-      // 行前
       if (dayId === "prep") {
-        container.innerHTML = `
+        let html = `
           <div>
-            <div class="small-label">新增一項行前準備</div>
-            <div class="row">
-              <div class="col">
-                <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
+            <div class="small-label">行前準備清單</div>
+            <div style="margin-bottom:6px;">
+              <div class="row">
+                <div class="col">
+                  <input id="prepInput" placeholder="新增一項行前準備（例如：辦旅遊保險、換外幣…）" />
+                </div>
+                <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
               </div>
-              <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
             </div>
-            <div class="small-label" style="margin-top:8px;">待辦清單</div>
             <div id="prepList"></div>
           </div>
         `;
+        container.innerHTML = html;
         renderPrepList(trip);
 
         document.getElementById("addPrepBtn").addEventListener("click", () => {
@@ -1110,34 +1163,48 @@
         return;
       }
 
-      // 一般每日行程
-      const listRaw = trip.itinerary[dayId] || [];
-      const list = listRaw
-        .slice()
-        .sort((a, b) => {
-          const ma = timeToMinutes(a.time || "");
-          const mb = timeToMinutes(b.time || "");
-          if (isNaN(ma) && isNaN(mb)) return 0;
-          if (isNaN(ma)) return 1;
-          if (isNaN(mb)) return -1;
-          return ma - mb;
-        });
+      const list = trip.itinerary[dayId] || [];
+      let sorted = list.slice().sort((a, b) => {
+        const ma = parseTimeToMinutes(a.time) ?? 9999;
+        const mb = parseTimeToMinutes(b.time) ?? 9999;
+        if (ma === mb) return (a.id || "").localeCompare(b.id || "");
+        return ma - mb;
+      });
 
-      const editingItem =
-        editingItinerary.dayId === dayId
-          ? listRaw.find(i => i.id === editingItinerary.itemId)
-          : null;
-
-      const timeVal = editingItem ? editingItem.time : "";
-      const titleVal = editingItem ? editingItem.title : "";
-      const noteVal = editingItem ? editingItem.note : "";
+      let formTitle = editingItineraryId ? "編輯行程項目" : "新增行程項目";
+      let formBtnText = editingItineraryId ? "儲存行程" : "＋ 新增行程";
 
       let listHtml = "";
-      if (list.length === 0) {
-        listHtml = `<div class="empty">目前尚未新增行程。</div>`;
+
+      const formHtml = `
+        <div style="margin-bottom:10px;">
+          <div class="small-label">${formTitle}</div>
+          <div class="row">
+            <div class="col">
+              <input id="itTime" placeholder="時間（例如 09:00）" inputmode="numeric" />
+            </div>
+            <div class="col">
+              <input id="itTitle" placeholder="行程名稱（例如：羅浮宮）" />
+            </div>
+          </div>
+          <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
+          <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="hint" id="itEditHint" style="visibility:${editingItineraryId ? "visible" : "hidden"};">
+              正在編輯既有行程，完成後請按「儲存行程」。
+            </div>
+            <div>
+              ${editingItineraryId ? `<button class="btn btn-ghost btn-sm" id="cancelItEditBtn">取消</button>` : ""}
+              <button class="btn btn-primary" id="addItineraryBtn">${formBtnText}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (sorted.length === 0) {
+        listHtml = `<div class="empty">還沒有安排行程，下方可以新增一筆～</div>`;
       } else {
         listHtml = `<div class="list">`;
-        list.forEach(item => {
+        sorted.forEach(item => {
           listHtml += `
             <div class="list-item">
               <div class="list-main">
@@ -1145,10 +1212,10 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <div class="it-actions">
-                <div class="it-main-btns">
+              <div class="actions-inline">
+                <div class="actions-top-row">
                   <button class="btn btn-ghost btn-sm" data-map-id="${item.id}">地圖</button>
-                  <button class="btn btn-ghost btn-sm" data-it-edit="${item.id}">編輯</button>
+                  <button class="btn btn-ghost btn-sm" data-edit-it-id="${item.id}">編輯</button>
                 </div>
                 <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
               </div>
@@ -1158,94 +1225,87 @@
         listHtml += `</div>`;
       }
 
-      const formHtml = `
-        <div style="margin-bottom:10px;">
-          <div class="small-label">新增行程項目</div>
-          <div class="row">
-            <div class="col">
-              <input type="time" id="itTime" value="${timeVal || ""}" />
-            </div>
-            <div class="col">
-              <input id="itTitle" placeholder="行程名稱（例如：羅浮宮）" value="${titleVal || ""}" />
-            </div>
-          </div>
-          <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）">${noteVal || ""}</textarea>
-          <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-            <span id="itEditHint" style="font-size:11px;color:var(--text-sub);">
-              ${editingItem ? "正在編輯既有行程，完成後請按「儲存行程」，或重新整理取消。" : ""}
-            </span>
-            <button class="btn btn-primary" id="addItineraryBtn">
-              ${editingItem ? "儲存行程" : "＋ 新增行程"}
-            </button>
-          </div>
-        </div>
-      `;
-
       container.innerHTML = formHtml + listHtml;
 
-      const timeInput = document.getElementById("itTime");
-      timeInput.addEventListener("blur", () => {
-        if (!timeInput.value) return;
-        timeInput.value = normalizeTimeString(timeInput.value);
-      });
+      // 如果正在編輯，帶入資料
+      if (editingItineraryId) {
+        const editingItem = list.find(i => i.id === editingItineraryId);
+        if (editingItem) {
+          document.getElementById("itTime").value = editingItem.time || "";
+          document.getElementById("itTitle").value = editingItem.title || "";
+          document.getElementById("itNote").value = editingItem.note || "";
+        }
+      }
 
-      document.getElementById("addItineraryBtn").addEventListener("click", () => {
-        const tRaw = document.getElementById("itTime").value;
-        const time = normalizeTimeString(tRaw);
+      const addBtn = document.getElementById("addItineraryBtn");
+      addBtn.addEventListener("click", () => {
+        const timeRaw = document.getElementById("itTime").value;
+        const time = normalizeTimeInput(timeRaw);
         const title = document.getElementById("itTitle").value.trim();
         const note = document.getElementById("itNote").value.trim();
+
         if (!title && !time && !note) return;
 
-        if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
-        if (editingItem) {
-          editingItem.time = time;
-          editingItem.title = title || "未命名行程";
-          editingItem.note = note;
-          editingItinerary = { dayId: null, itemId: null };
+        if (editingItineraryId) {
+          const item = (trip.itinerary[dayId] || []).find(i => i.id === editingItineraryId);
+          if (item) {
+            item.time = time;
+            item.title = title || "未命名行程";
+            item.note = note;
+          }
+          editingItineraryId = null;
         } else {
-          trip.itinerary[dayId].push({
+          const item = {
             id: generateId("it"),
             time,
             title: title || "未命名行程",
             note
-          });
+          };
+          if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
+          trip.itinerary[dayId].push(item);
         }
         saveRoot();
         renderDayContent(trip);
       });
 
-      // 刪除
+      const timeInput = document.getElementById("itTime");
+      timeInput.addEventListener("blur", () => {
+        timeInput.value = normalizeTimeInput(timeInput.value);
+      });
+
+      const cancelBtn = document.getElementById("cancelItEditBtn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+          editingItineraryId = null;
+          renderDayContent(trip);
+        });
+      }
+
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-itinerary");
           trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== id);
-          if (editingItinerary.itemId === id && editingItinerary.dayId === dayId) {
-            editingItinerary = { dayId: null, itemId: null };
-          }
+          if (editingItineraryId === id) editingItineraryId = null;
           saveRoot();
           renderDayContent(trip);
         });
       });
 
-      // 地圖
       container.querySelectorAll("[data-map-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-map-id");
           const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
-          if (!item) return;
-          const query = (trip.destination ? trip.destination + " " : "") + (item.title || "");
-          const url =
-            "https://www.google.com/maps/search/?api=1&query=" +
-            encodeURIComponent(query);
+          if (!item || !item.title) return;
+          const query = item.title + (trip.destination ? " " + trip.destination : "");
+          const url = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query);
           window.open(url, "_blank");
         });
       });
 
-      // 編輯
-      container.querySelectorAll("[data-it-edit]").forEach(btn => {
+      container.querySelectorAll("[data-edit-it-id]").forEach(btn => {
         btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-it-edit");
-          editingItinerary = { dayId, itemId: id };
+          const id = btn.getAttribute("data-edit-it-id");
+          editingItineraryId = id;
           renderDayContent(trip);
         });
       });
@@ -1295,7 +1355,7 @@
       });
     }
 
-    // ===== 航班 Tab =====
+    // ========= 航班 Tab =========
     function renderFlightsView() {
       const trip = getCurrentTrip();
       let html = `
@@ -1332,7 +1392,7 @@
             </div>
             <div class="row">
               <div class="col">
-                <input id="flightTime" placeholder="起飛時間（例如：23:40）" />
+                <input id="flightTime" placeholder="起飛時間（例如：23:40）" inputmode="numeric" />
               </div>
               <div class="col">
                 <input id="flightNote" placeholder="備註（去程／回程…）" />
@@ -1358,6 +1418,7 @@
         const dateInput = document.getElementById("flightDate");
 
         const flightNo = noInput.value;
+
         if (!flightNo.trim()) {
           alert("請先輸入班機號，例如 BR87");
           return;
@@ -1369,10 +1430,12 @@
 
         try {
           const info = await fetchFlightInfoByNumber(flightNo);
+
           if (info.from) fromInput.value = info.from;
           if (info.to) toInput.value = info.to;
           if (info.time) timeInput.value = info.time;
           if (info.date && !dateInput.value) dateInput.value = info.date;
+
           if (info.status) {
             if (!noteInput.value) {
               noteInput.value = "狀態：" + info.status;
@@ -1389,12 +1452,17 @@
         }
       });
 
+      const timeInput = document.getElementById("flightTime");
+      timeInput.addEventListener("blur", () => {
+        timeInput.value = normalizeTimeInput(timeInput.value);
+      });
+
       document.getElementById("addFlightBtn").addEventListener("click", () => {
         const date = document.getElementById("flightDate").value;
         const no = document.getElementById("flightNo").value.trim();
         const from = document.getElementById("flightFrom").value.trim();
         const to = document.getElementById("flightTo").value.trim();
-        const time = document.getElementById("flightTime").value.trim();
+        const time = normalizeTimeInput(document.getElementById("flightTime").value);
         const note = document.getElementById("flightNote").value.trim();
         if (!no && !from && !to) return;
 
@@ -1430,17 +1498,7 @@
           const toCode = f.to || "???";
           const note = f.note || "";
 
-          // 目的地中文簡單對照（可自行再補）
-          const destMap = {
-            TPE: "台北",
-            KIX: "大阪",
-            NRT: "東京",
-            HND: "東京",
-            CDG: "巴黎",
-            AMS: "阿姆斯特丹",
-            FRA: "法蘭克福"
-          };
-          const destLabel = destMap[toCode] || toCode;
+          const destZh = AIRPORT_ZH[toCode.toUpperCase()] || toCode;
 
           html += `
             <div class="flight-card-wrap">
@@ -1450,17 +1508,19 @@
                   <div class="flight-card-top-left">
                     ${dateText ? dateText : ""}${timeText ? " · " + timeText : ""}
                   </div>
-                  <div style="font-size:11px;opacity:0.9;">
-                    航班前往 ${destLabel}
+                  <div style="font-size:11px;opacity:.9;">
+                    航班前往 ${destZh}
                   </div>
                 </div>
                 <div class="flight-card-main">
                   <div>
                     <div class="flight-airport">${fromCode}</div>
                     <div class="flight-airport-label">FROM</div>
-                    <div style="margin-top:4px;font-size:11px;">
-                      ${f.flightNo ? "Flight " + f.flightNo : ""}
-                    </div>
+                    ${
+                      f.flightNo
+                        ? `<div style="margin-top:4px;font-size:11px;opacity:.9;">班機：${f.flightNo}</div>`
+                        : ""
+                    }
                   </div>
                   <div class="flight-plane-icon">✈️</div>
                   <div style="text-align:right;">
@@ -1488,10 +1548,7 @@
       });
     }
 
-    // ===== 記帳 Tab =====
-    let expenseFilter = "all"; // all / cash / card
-    let editingExpenseId = null;
-
+    // ========= 記帳 Tab =========
     function renderExpensesView() {
       const trip = getCurrentTrip();
       const cur = trip.currency || "JPY";
@@ -1514,23 +1571,24 @@
           ? rateObj.rate
           : null;
 
-      const totalTWD = useableRate ? total * useableRate : null;
+      const totalTWD =
+        useableRate && total
+          ? Math.round(total * useableRate)
+          : (trip.expenses.some(e => typeof e.twdApprox === "number")
+              ? trip.expenses.reduce((s, e) => {
+                  if (typeof e.twdApprox === "number") return s + e.twdApprox;
+                  return s;
+                }, 0)
+              : null);
 
-      let rateInfoText = "";
+      let rateInfoText;
       if (cur === "TWD") {
         rateInfoText = "主要貨幣為 TWD，無需設定匯率。";
       } else if (useableRate) {
-        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(
-          2
-        )} TWD${rateObj.updatedAt ? `（${rateObj.updatedAt}）` : ""}`;
+        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(2)} TWD`;
       } else {
         rateInfoText = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）。";
       }
-
-      const editingExpense =
-        editingExpenseId != null
-          ? trip.expenses.find(e => e.id === editingExpenseId)
-          : null;
 
       let html = `
         <section class="card">
@@ -1547,7 +1605,7 @@
               <button class="btn btn-ghost btn-sm" id="fetchRateBtn">查詢匯率</button>
               <button class="btn btn-primary btn-sm" id="saveRateBtn">儲存匯率</button>
             </div>
-            <div style="font-size:11px;color:var(--text-sub);" id="rateStatusText">
+            <div class="hint" id="rateStatusText">
               ${rateInfoText}
             </div>
           </div>
@@ -1565,13 +1623,23 @@
             <div class="summary-row">
               <span>約當 TWD 總支出</span>
               <strong>
-                ${totalTWD != null ? "TWD " + totalTWD.toFixed(0) : "未設定匯率"}
+                ${
+                  totalTWD != null
+                    ? "TWD " + totalTWD.toFixed(0)
+                    : "未設定匯率 / 約當金額"
+                }
               </strong>
             </div>
           </div>
 
-          <div style="margin-top:10px;">
-            <div class="small-label">新增一筆支出</div>
+          <div class="expense-tabs">
+            <div class="expense-tab ${expenseFilterMode === "all" ? "active" : ""}" data-exp-filter="all">全部</div>
+            <div class="expense-tab ${expenseFilterMode === "cash" ? "active" : ""}" data-exp-filter="cash">現金</div>
+            <div class="expense-tab ${expenseFilterMode === "card" ? "active" : ""}" data-exp-filter="card">信用卡</div>
+          </div>
+
+          <div style="margin-top:8px;">
+            <div class="small-label">新增 / 編輯支出</div>
             <div class="row">
               <div class="col">
                 <input type="date" id="expDate" />
@@ -1586,42 +1654,38 @@
             </div>
             <div class="row">
               <div class="col">
-                <input id="expAmount" type="number" placeholder="金額" />
+                <input id="expAmount" type="number" placeholder="金額（${cur}）" />
               </div>
               <div class="col">
                 <input id="expCategory" placeholder="分類（餐飲、交通…）" />
               </div>
             </div>
+            <div class="row">
+              <div class="col">
+                <input id="expTwdApprox" type="number" placeholder="約當 TWD，可手動輸入" />
+              </div>
+            </div>
             <input id="expNote" placeholder="備註（店名、刷哪張卡…）" />
-            <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-              <span id="expEditHint" style="font-size:11px;color:var(--text-sub);">
-                ${
-                  editingExpense
-                    ? "正在編輯既有支出，完成後請按「儲存支出」。"
-                    : ""
-                }
-              </span>
+            <div style="margin-top:4px;" class="hint" id="expEditHint">
+              ${
+                editingExpenseId
+                  ? "正在編輯既有支出，完成後請按「儲存支出」。"
+                  : "新增支出可自動用匯率帶入「約當 TWD」，若有銀行實際扣款可自行修改。"
+              }
+            </div>
+            <div style="margin-top:8px; text-align:right;">
+              ${
+                editingExpenseId
+                  ? `<button class="btn btn-ghost btn-sm" id="cancelExpEditBtn">取消編輯</button>`
+                  : ""
+              }
               <button class="btn btn-primary" id="addExpenseBtn">
-                ${editingExpense ? "儲存支出" : "＋ 新增支出"}
+                ${editingExpenseId ? "儲存支出" : "＋ 新增支出"}
               </button>
             </div>
           </div>
 
-          <div class="exp-filter-tabs">
-            <div class="tabs">
-              <div class="tab ${
-                expenseFilter === "all" ? "active" : ""
-              }" data-exp-filter="all">全部</div>
-              <div class="tab ${
-                expenseFilter === "cash" ? "active" : ""
-              }" data-exp-filter="cash">現金</div>
-              <div class="tab ${
-                expenseFilter === "card" ? "active" : ""
-              }" data-exp-filter="card">信用卡</div>
-            </div>
-          </div>
-
-          <div style="margin-top:4px;" id="expenseList"></div>
+          <div style="margin-top:10px;" id="expenseList"></div>
         </section>
       `;
 
@@ -1660,8 +1724,7 @@
           saveRoot();
 
           rateStatusTextEl.textContent =
-            `目前匯率：1 ${cur} ≈ ${rate.toFixed(2)} TWD` +
-            (updatedAt ? `（${updatedAt}）` : "");
+            `目前匯率：1 ${cur} ≈ ${rate.toFixed(2)} TWD`;
           renderHeader();
         } catch (err) {
           console.error(err);
@@ -1678,7 +1741,19 @@
           alert("請輸入正確的匯率數字（> 0）。");
           return;
         }
-        const label = formatDateTimeShort(new Date());
+
+        const now = new Date();
+        const label =
+          now.getFullYear() +
+          "-" +
+          String(now.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(now.getDate()).padStart(2, "0") +
+          " " +
+          String(now.getHours()).padStart(2, "0") +
+          ":" +
+          String(now.getMinutes()).padStart(2, "0");
+
         trip.exchangeRate = {
           base: cur,
           target: "TWD",
@@ -1688,39 +1763,73 @@
         saveRoot();
 
         rateStatusTextEl.textContent =
-          `目前匯率：1 ${cur} ≈ ${v.toFixed(2)} TWD（${label}）`;
+          `目前匯率：1 ${cur} ≈ ${v.toFixed(2)} TWD`;
         renderHeader();
       });
 
-      // 預填編輯中的支出
-      const expDate = document.getElementById("expDate");
-      const expMethod = document.getElementById("expMethod");
-      const expAmount = document.getElementById("expAmount");
-      const expCategory = document.getElementById("expCategory");
-      const expNote = document.getElementById("expNote");
-      if (editingExpense) {
-        expDate.value = editingExpense.date || "";
-        expMethod.value = editingExpense.method || "cash";
-        expAmount.value = editingExpense.amount != null ? editingExpense.amount : "";
-        expCategory.value = editingExpense.category || "";
-        expNote.value = editingExpense.note || "";
+      // 篩選 tab
+      document.querySelectorAll("[data-exp-filter]").forEach(tab => {
+        tab.addEventListener("click", () => {
+          expenseFilterMode = tab.getAttribute("data-exp-filter");
+          renderExpensesView();
+        });
+      });
+
+      // 若正在編輯，帶入資料
+      if (editingExpenseId) {
+        const target = trip.expenses.find(e => e.id === editingExpenseId);
+        if (target) {
+          document.getElementById("expDate").value = target.date || "";
+          document.getElementById("expMethod").value = target.method || "cash";
+          document.getElementById("expAmount").value = target.amount ?? "";
+          document.getElementById("expCategory").value = target.category || "";
+          document.getElementById("expNote").value = target.note || "";
+          if (typeof target.twdApprox === "number") {
+            document.getElementById("expTwdApprox").value = target.twdApprox;
+          } else if (useableRate && target.amount) {
+            document.getElementById("expTwdApprox").value = Math.round(target.amount * useableRate);
+          }
+        }
+      }
+
+      const cancelBtn = document.getElementById("cancelExpEditBtn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+          editingExpenseId = null;
+          renderExpensesView();
+        });
       }
 
       document.getElementById("addExpenseBtn").addEventListener("click", () => {
-        const date = expDate.value;
-        const method = expMethod.value;
-        const amountRaw = expAmount.value;
-        const category = expCategory.value.trim();
-        const note = expNote.value.trim();
+        const date = document.getElementById("expDate").value;
+        const method = document.getElementById("expMethod").value;
+        const amountRaw = document.getElementById("expAmount").value;
+        const category = document.getElementById("expCategory").value.trim();
+        const note = document.getElementById("expNote").value.trim();
+        const twdRaw = document.getElementById("expTwdApprox").value;
+
         const amount = parseFloat(amountRaw);
         if (isNaN(amount)) return;
 
-        if (editingExpense) {
-          editingExpense.date = date;
-          editingExpense.method = method;
-          editingExpense.amount = amount;
-          editingExpense.category = category || "未分類";
-          editingExpense.note = note;
+        let twdApprox = parseFloat(twdRaw);
+        if (isNaN(twdApprox)) {
+          if (useableRate) {
+            twdApprox = Math.round(amount * useableRate);
+          } else {
+            twdApprox = null;
+          }
+        }
+
+        if (editingExpenseId) {
+          const target = trip.expenses.find(e => e.id === editingExpenseId);
+          if (target) {
+            target.date = date;
+            target.method = method;
+            target.amount = amount;
+            target.category = category;
+            target.note = note;
+            target.twdApprox = twdApprox != null ? twdApprox : undefined;
+          }
           editingExpenseId = null;
         } else {
           trip.expenses.push({
@@ -1728,81 +1837,77 @@
             date,
             method,
             amount,
-            category: category || "未分類",
-            note
+            category,
+            note,
+            twdApprox: twdApprox != null ? twdApprox : undefined
           });
         }
+
         saveRoot();
         renderExpensesView();
       });
 
-      // filter tabs
-      document.querySelectorAll("[data-exp-filter]").forEach(tab => {
-        tab.addEventListener("click", () => {
-          const val = tab.getAttribute("data-exp-filter");
-          expenseFilter = val;
-          renderExpensesView();
-        });
-      });
-
-      renderExpenseList(trip, useableRate);
+      renderExpenseList(trip);
     }
 
-    function renderExpenseList(trip, useableRate) {
+    function renderExpenseList(trip) {
       const container = document.getElementById("expenseList");
       if (!trip.expenses || trip.expenses.length === 0) {
         container.innerHTML = `<div class="empty">目前沒有支出紀錄。</div>`;
         return;
       }
       const cur = trip.currency || "JPY";
+      const rateObj = trip.exchangeRate;
+      const useableRate =
+        rateObj &&
+        typeof rateObj.rate === "number" &&
+        rateObj.rate > 0 &&
+        rateObj.base === cur &&
+        rateObj.target === "TWD"
+          ? rateObj.rate
+          : null;
 
-      const filtered = trip.expenses.filter(e => {
-        if (expenseFilter === "cash") return e.method === "cash";
-        if (expenseFilter === "card") return e.method === "card";
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="empty">目前此類型沒有支出。</div>`;
-        return;
+      let filtered = trip.expenses.slice();
+      if (expenseFilterMode === "cash") {
+        filtered = filtered.filter(e => e.method === "cash");
+      } else if (expenseFilterMode === "card") {
+        filtered = filtered.filter(e => e.method === "card");
       }
 
-      let html = `<div class="list">`;
-      filtered
-        .slice()
-        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
-        .forEach(e => {
-          let methodLabel = "其他";
-          if (e.method === "cash") methodLabel = "現金";
-          if (e.method === "card") methodLabel = "信用卡";
-          const twd =
-            useableRate && !isNaN(e.amount) ? e.amount * useableRate : null;
+      filtered.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
-          html += `
-            <div class="list-item">
-              <div class="list-main">
-                <div class="list-meta">${e.date ? formatDateMMDD(e.date) : ""}</div>
-                <div class="list-title">
-                  ${e.category || "未分類"}
-                  <span class="badge">${methodLabel}</span>
-                  <span class="badge">${formatAmount(e.amount, cur)}</span>
-                  ${
-                    twd != null
-                      ? `<span class="badge">約 TWD ${twd.toFixed(0)}</span>`
-                      : ""
-                  }
-                </div>
-                ${e.note ? `<div class="list-note">${e.note}</div>` : ""}
+      let html = `<div class="list">`;
+      filtered.forEach(e => {
+        let methodLabel = "其他";
+        if (e.method === "cash") methodLabel = "現金";
+        if (e.method === "card") methodLabel = "信用卡";
+
+        let approxTwd = null;
+        if (typeof e.twdApprox === "number") {
+          approxTwd = e.twdApprox;
+        } else if (useableRate && e.amount) {
+          approxTwd = Math.round(e.amount * useableRate);
+        }
+
+        html += `
+          <div class="list-item">
+            <div class="list-main">
+              <div class="list-meta">${e.date ? formatDateMMDD(e.date) : ""}</div>
+              <div class="list-title">
+                ${e.category || "未分類"} 
+                <span class="badge">${methodLabel}</span>
+                <span class="badge">${formatAmount(e.amount, cur)}</span>
+                ${approxTwd != null ? `<span class="badge">約 TWD ${approxTwd}</span>` : ""}
               </div>
-              <div class="it-actions">
-                <div class="it-main-btns">
-                  <button class="btn btn-ghost btn-sm" data-exp-edit="${e.id}">編輯</button>
-                </div>
-                <button class="btn btn-danger btn-icon" data-exp-del="${e.id}">✕</button>
-              </div>
+              ${e.note ? `<div class="list-note">${e.note}</div>` : ""}
             </div>
-          `;
-        });
+            <div class="actions-inline">
+              <button class="btn btn-ghost btn-sm" data-exp-edit="${e.id}">編輯</button>
+              <button class="btn btn-danger btn-icon" data-exp-del="${e.id}">✕</button>
+            </div>
+          </div>
+        `;
+      });
       html += `</div>`;
       container.innerHTML = html;
 
@@ -1825,7 +1930,7 @@
       });
     }
 
-    // ===== 購物 Tab =====
+    // ========= 購物 Tab =========
     function renderShoppingView() {
       const trip = getCurrentTrip();
       const cur = trip.currency || "JPY";
@@ -1862,7 +1967,7 @@
 
           <div style="margin-top:10px;" id="shopList"></div>
         </section>
-      `;
+     `;
 
       mainView.innerHTML = html;
       renderShopList(trip);
@@ -1905,12 +2010,10 @@
               </div>
               ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
             </div>
-            <div class="it-actions">
-              <div class="it-main-btns">
-                <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
-                  ${item.bought ? "取消已買" : "標記已買"}
-                </button>
-              </div>
+            <div class="actions-inline">
+              <button class="btn btn-ghost btn-sm" data-shop-toggle="${item.id}">
+                ${item.bought ? "取消已買" : "標記已買"}
+              </button>
               <button class="btn btn-danger btn-icon" data-shop-del="${item.id}">✕</button>
             </div>
           </div>
@@ -1941,7 +2044,7 @@
       });
     }
 
-    // ===== 主畫面切換 =====
+    // ========= 主畫面切換 =========
     function renderCurrentMainView() {
       if (currentTab === "itinerary") {
         renderItineraryView();
@@ -1954,7 +2057,7 @@
       }
     }
 
-    // ===== 初始化 =====
+    // ========= 初始化 =========
     (function init() {
       const trip = getCurrentTrip();
       if (!trip.days || trip.days.length === 0) {
@@ -1963,7 +2066,8 @@
       renderTripSelector();
       initTripInputs();
       renderHeader();
-      updateTripSettingsToggleUI();
+      const collapsed = localStorage.getItem(TRIP_CARD_COLLAPSE_KEY) === "1";
+      setTripCardCollapsed(collapsed);
       renderCurrentMainView();
     })();
   </script>
