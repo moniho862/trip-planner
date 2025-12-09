@@ -985,7 +985,7 @@
     function initTripInputs() {
       const trip = getCurrentTrip();
       tripNameInput.value = trip.name || "";
-      destinationInput.value = trip.destination || "";
+      destinationInput.value = trip.destination || ""
       currencyInput.value = trip.currency || "JPY";
       startDateInput.value = trip.startDate || "";
       daysInput.value = trip.daysCount || 4;
@@ -1036,50 +1036,51 @@
       renderCurrentMainView();
     });
 
-    applyTripBtn.addEventListener("click", () => {
-  const trip = getCurrentTrip();
-  const oldCurrency = trip.currency || "JPY";   // 記住原本的貨幣
+    // 🔄 套用變更：更新旅程設定，並自動抓匯率
+    applyTripBtn.addEventListener("click", async () => {
+      const trip = getCurrentTrip();
+      const newCurrency = currencyInput.value;
 
-  // 旅程基本資訊
-  trip.name = tripNameInput.value.trim() || "未命名旅程";
-  trip.destination = destinationInput.value.trim();
-  const newCurrency = currencyInput.value;
-  trip.currency = newCurrency;
-  trip.startDate = startDateInput.value;
+      // 1️⃣ 更新基本旅程資訊
+      trip.name = tripNameInput.value.trim() || "未命名旅程";
+      trip.destination = destinationInput.value.trim();
+      trip.currency = newCurrency;
+      trip.startDate = startDateInput.value;
 
-  let n = parseInt(daysInput.value, 10);
-  if (isNaN(n)) n = 1;
-  trip.daysCount = Math.max(1, Math.min(30, n));
+      let n = parseInt(daysInput.value, 10);
+      if (isNaN(n)) n = 1;
+      trip.daysCount = Math.max(1, Math.min(30, n));
 
-  // 重新產生天數
-  regenerateDays(trip);
+      // 重新產生天數
+      regenerateDays(trip);
 
-  // 🔁 主要貨幣有變更時，把匯率重置（避免沿用舊匯率）
-  if (oldCurrency !== newCurrency) {
-    trip.exchangeRate = {
-      base: newCurrency,
-      target: "TWD",
-      rate: null,        // 清空舊匯率
-      updatedAt: ""
-    };
-  } else {
-    // 沒變更貨幣就維持原本 exchangeRate 結構
-    if (!trip.exchangeRate) {
+      // 2️⃣ 重置 exchangeRate 結構
       trip.exchangeRate = {
         base: newCurrency,
         target: "TWD",
         rate: null,
         updatedAt: ""
       };
-    } else {
-      trip.exchangeRate.base = newCurrency;
-      trip.exchangeRate.target = "TWD";
-    }
-  }
 
-  saveRoot();           // 裡面會順便 renderHeader()
-  renderCurrentMainView();
-});
+      // 3️⃣ 若主要貨幣不是 TWD，自動抓匯率
+      if (newCurrency && newCurrency.toUpperCase() !== "TWD") {
+        try {
+          const result = await fetchRateToTWD(newCurrency);
+          trip.exchangeRate.rate = result.rate;
+          trip.exchangeRate.updatedAt = result.updatedAt || "";
+        } catch (err) {
+          console.error(err);
+          alert(
+            "自動查匯率失敗，可以到「記帳」分頁手動查詢或輸入匯率。\n錯誤訊息：" +
+              err.message
+          );
+        }
+      }
+
+      // 4️⃣ 儲存並刷新畫面
+      saveRoot();              // 會順便更新 header & 旅程下拉
+      renderCurrentMainView(); // 讓目前 tab 也重新依新貨幣顯示
+    });
 
     // ====== 底部 Tab ======
     let currentTab = "itinerary";
@@ -1308,7 +1309,7 @@
         });
       });
 
-      // 編輯行程：只改變按鈕模式 + 填入欄位，不覆蓋 onclick
+      // 編輯行程
       container.querySelectorAll("[data-edit-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-edit-itinerary");
@@ -1882,7 +1883,7 @@
         });
       });
 
-      // 編輯支出：只設定 editingExpenseId + 填入欄位，不再覆寫 addExpenseBtn.onclick
+      // 編輯支出
       container.querySelectorAll("[data-exp-edit]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-exp-edit");
@@ -2044,4 +2045,3 @@
   </script>
 </body>
 </html>
-
