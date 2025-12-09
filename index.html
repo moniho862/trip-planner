@@ -66,10 +66,17 @@
       color: var(--text-sub);
     }
 
-    .fx-info {
-      font-size: 11px;
-      color: #4b5563;
+    .top-info-rate {
       margin-top: 2px;
+      font-size: 11px;
+      color: #1d4ed8;
+    }
+
+    .top-info-rate span {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(59,130,246,0.08);
     }
 
     .card {
@@ -99,12 +106,6 @@
       display: block;
     }
 
-    .card-subtitle {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
     input, select, textarea {
       width: 100%;
       font-size: 13px;
@@ -113,6 +114,8 @@
       border: 1px solid #e5e7eb;
       outline: none;
       background: #f9fafb;
+      box-sizing: border-box;
+      height: 40px;
     }
 
     input:focus, select:focus, textarea:focus {
@@ -124,6 +127,13 @@
       border-radius: 12px;
       resize: vertical;
       min-height: 52px;
+      height: auto;
+    }
+
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
 
     .row {
@@ -175,15 +185,28 @@
       padding: 5px 10px;
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,.8);
       border-radius: 999px;
-      background: #eff6ff;
-      font-size: 11px;
-      color: #1d4ed8;
+      padding: 4px;
+      gap: 4px;
+      margin: 8px 0 12px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      padding: 6px 0;
+      border-radius: 999px;
+      cursor: pointer;
+      color: var(--text-sub);
+    }
+
+    .tab.active {
+      background: #111827;
+      color: #f9fafb;
     }
 
     .day-chips {
@@ -214,6 +237,17 @@
     .chip.active {
       background: #1d4ed8;
       color: #eff6ff;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      font-size: 11px;
+      color: #1d4ed8;
     }
 
     .list {
@@ -435,27 +469,6 @@
         margin-top: 12px;
       }
     }
-
-    /* 統一輸入欄位與下拉選單高度 */
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    select {
-      width: 100%;
-      height: 40px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background-color: #f9fafb;
-      font-size: 13px;
-      box-sizing: border-box;
-    }
-
-    select {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-    }
   </style>
 </head>
 <body>
@@ -470,7 +483,7 @@
       </div>
       <div class="top-info">
         <div id="dateInfoText">請先設定日期與天數</div>
-        <div id="fxInfoText" class="fx-info">匯率尚未設定</div>
+        <div class="top-info-rate" id="rateInfoText"></div>
       </div>
     </header>
 
@@ -540,7 +553,7 @@
     <div id="mainView"></div>
   </div>
 
-  <!-- 底部導航（行程 / 航班 / 記帳 / 購物） -->
+  <!-- 底部導航：已移除獨立「行前」，改在每日行程裡 -->
   <nav class="bottom-nav">
     <div class="bottom-tabs">
       <div class="bottom-tab active" data-tab="itinerary">
@@ -559,11 +572,31 @@
   </nav>
 
   <script>
-    // ====== 航班 API（Aviationstack）設定：有需要再換成你自己的 key ======
-    const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
+    // ====== 匯率 API：使用 open.er-api.com，免註冊免 key ======
+    // 取得 baseCurrency -> targetCurrency 的匯率
+    async function fetchRateToTWD(baseCurrency) {
+      const base = (baseCurrency || "").toUpperCase();
+      if (!base) throw new Error("尚未設定主要貨幣");
+      if (base === "TWD") throw new Error("主要貨幣為 TWD，無需換算");
 
-    // ====== 匯率 API 設定（使用 exchangerate.host，免金鑰） ======
-    const FX_BASE_URL = "https://api.exchangerate.host/latest";
+      const url = "https://open.er-api.com/v6/latest/" + encodeURIComponent(base);
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("HTTP " + res.status);
+      }
+      const data = await res.json();
+      if (!data || data.result !== "success") {
+        throw new Error("API result=" + (data && data.result ? data.result : "unknown"));
+      }
+      if (!data.rates || typeof data.rates.TWD !== "number") {
+        throw new Error("API 無 TWD 匯率");
+      }
+      return {
+        rate: data.rates.TWD,
+        // 直接存 UTC 更新時間字串
+        updatedAt: data.time_last_update_utc || ""
+      };
+    }
 
     // ====== 資料結構 / 儲存 ======
     const STORAGE_KEY = "tripPlanner_multi_v2";
@@ -577,15 +610,35 @@
         startDate: "",
         daysCount: 4,
         days: [],
-        activeDayId: null,
+        activeDayId: null,   // "prep" 或 "day1"...
         flights: [],
         checklist: [],
         itinerary: {},
         expenses: [],
         shopping: [],
-        fxRate: null,   // 主要貨幣對 TWD 的匯率
-        fxDate: ""      // 匯率日期（YYYY-MM-DD）
+        exchangeRate: {      // 主要貨幣兌 TWD 的匯率
+          base: "JPY",
+          target: "TWD",
+          rate: null,
+          updatedAt: ""
+        }
       };
+    }
+
+    function ensureTripShape(trip) {
+      if (!trip.itinerary) trip.itinerary = {};
+      if (!trip.flights) trip.flights = [];
+      if (!trip.checklist) trip.checklist = [];
+      if (!trip.expenses) trip.expenses = [];
+      if (!trip.shopping) trip.shopping = [];
+      if (!trip.exchangeRate) {
+        trip.exchangeRate = {
+          base: trip.currency || "JPY",
+          target: "TWD",
+          rate: null,
+          updatedAt: ""
+        };
+      }
     }
 
     function loadRoot() {
@@ -596,7 +649,14 @@
           regenerateDays(trip);
           return { trips: [trip], activeTripId: trip.id };
         }
-        return JSON.parse(raw);
+        const obj = JSON.parse(raw);
+        if (!obj.trips || !Array.isArray(obj.trips) || obj.trips.length === 0) {
+          const trip = createEmptyTrip("新旅程 1");
+          regenerateDays(trip);
+          return { trips: [trip], activeTripId: trip.id };
+        }
+        obj.trips.forEach(ensureTripShape);
+        return obj;
       } catch (e) {
         console.error(e);
         const trip = createEmptyTrip("新旅程 1");
@@ -619,6 +679,7 @@
         t = root.trips[0];
         root.activeTripId = t.id;
       }
+      ensureTripShape(t);
       return t;
     }
 
@@ -637,8 +698,9 @@
         if (!trip.itinerary[id]) trip.itinerary[id] = [];
       }
       trip.days = days;
-      if (!trip.activeDayId && days.length > 0) {
-        trip.activeDayId = days[0].id;
+      if (!trip.activeDayId) {
+        // 預設先看 Day 1（行前可自行點）
+        if (days.length > 0) trip.activeDayId = days[0].id;
       }
     }
 
@@ -652,16 +714,6 @@
       return String(m).padStart(2, "0") + "/" + String(day).padStart(2, "0");
     }
 
-    function formatDateYMD(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return dateStr;
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}/${m}/${day}`;
-    }
-
     function generateId(prefix) {
       return prefix + "_" + Math.random().toString(36).slice(2, 9);
     }
@@ -671,7 +723,9 @@
       return currency + " " + amount.toFixed(0);
     }
 
-    // ====== 航班查詢（依航班號） ======
+    // ====== 依航班號從 aviationstack 查資料（你已經有 key 了就放這裡） ======
+    const AVIATIONSTACK_KEY = "f9e92bf4a1ac9571bb2f08a7050e0503";
+
     async function fetchFlightInfoByNumber(flightNo) {
       if (!AVIATIONSTACK_KEY || AVIATIONSTACK_KEY === "YOUR_ACCESS_KEY_HERE") {
         throw new Error("尚未設定 Aviationstack API Key");
@@ -718,26 +772,6 @@
       };
     }
 
-    // ====== 匯率查詢（主要貨幣 ➜ TWD） ======
-    async function fetchFxRate(baseCurrency) {
-      const base = (baseCurrency || "JPY").toUpperCase();
-      if (base === "TWD") {
-        // 若主要貨幣本身就是 TWD，就直接回傳 1
-        return { rate: 1, date: new Date().toISOString().substring(0,10) };
-      }
-
-      const url = `${FX_BASE_URL}?base=${encodeURIComponent(base)}&symbols=TWD`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error("HTTP " + res.status);
-      }
-      const data = await res.json();
-      if (!data || !data.rates || typeof data.rates.TWD !== "number") {
-        throw new Error("API 沒有回傳 TWD 匯率（rates.TWD）");
-      }
-      return { rate: data.rates.TWD, date: data.date };
-    }
-
     // ====== Header 與旅程設定 ======
     const tripNameInput = document.getElementById("tripNameInput");
     const destinationInput = document.getElementById("destinationInput");
@@ -753,7 +787,7 @@
     const destinationTag = document.getElementById("destinationTag");
     const tripNameText = document.getElementById("tripNameText");
     const dateInfoText = document.getElementById("dateInfoText");
-    const fxInfoText = document.getElementById("fxInfoText");
+    const rateInfoText = document.getElementById("rateInfoText");
     const mainView = document.getElementById("mainView");
 
     function renderHeader() {
@@ -774,13 +808,25 @@
         dateInfoText.textContent = "請先設定日期與天數";
       }
 
-      if (trip.fxRate != null) {
-        const cur = trip.currency || "JPY";
-        const dateText = trip.fxDate ? `（${formatDateYMD(trip.fxDate)}）` : "";
-        fxInfoText.textContent =
-          `匯率：1 ${cur} ≈ ${trip.fxRate.toFixed(2)} TWD${dateText}`;
+      // 匯率顯示
+      const ex = trip.exchangeRate;
+      if (
+        ex &&
+        ex.rate &&
+        typeof ex.rate === "number" &&
+        ex.base === (trip.currency || "").toUpperCase() &&
+        ex.target === "TWD"
+      ) {
+        rateInfoText.innerHTML =
+          `<span>匯率：1 ${ex.base} ≈ ${ex.rate.toFixed(2)} TWD` +
+          (ex.updatedAt ? `（${ex.updatedAt}）` : "") +
+          `</span>`;
       } else {
-        fxInfoText.textContent = "匯率尚未設定";
+        if ((trip.currency || "").toUpperCase() === "TWD") {
+          rateInfoText.innerHTML = `<span>匯率：主要貨幣為 TWD，無需換算</span>`;
+        } else {
+          rateInfoText.innerHTML = `<span>匯率尚未設定</span>`;
+        }
       }
     }
 
@@ -848,6 +894,15 @@
       if (isNaN(n)) n = 1;
       trip.daysCount = Math.max(1, Math.min(30, n));
       regenerateDays(trip);
+
+      // 更新 exchangeRate.base
+      if (!trip.exchangeRate) {
+        trip.exchangeRate = { base: trip.currency, target: "TWD", rate: null, updatedAt: "" };
+      } else {
+        trip.exchangeRate.base = trip.currency;
+        trip.exchangeRate.target = "TWD";
+      }
+
       saveRoot();
       renderCurrentMainView();
     });
@@ -882,7 +937,7 @@
       });
     });
 
-    // ====== 行程 Tab（含行前清單） ======
+    // ====== 行程 Tab（內含：行前 + 每日行程） ======
     function renderItineraryView() {
       const trip = getCurrentTrip();
 
@@ -901,22 +956,11 @@
               <span>${trip.destination || "目的地未設定"}</span>
             </div>
           </div>
-
-          <!-- 行前清單（新增在上、清單在下） -->
-          <div style="margin-bottom:8px;">
-            <div class="card-subtitle">行前準備</div>
-            <div class="row">
-              <div class="col">
-                <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
-              </div>
-              <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
-            </div>
-            <div id="prepList"></div>
-          </div>
-
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:8px 0 10px;">
-
           <div class="day-chips">
+            <div class="chip ${trip.activeDayId === "prep" ? "active" : ""}" data-day-id="prep">
+              <strong>行前</strong>
+              <span>待辦清單</span>
+            </div>
       `;
 
       trip.days.forEach(d => {
@@ -937,24 +981,6 @@
 
       mainView.innerHTML = html;
 
-      // 行前清單渲染與事件
-      renderPrepList(trip);
-
-      document.getElementById("addPrepBtn").addEventListener("click", () => {
-        const input = document.getElementById("prepInput");
-        const text = input.value.trim();
-        if (!text) return;
-        trip.checklist.push({
-          id: generateId("prep"),
-          text,
-          done: false
-        });
-        input.value = "";
-        saveRoot();
-        renderItineraryView(); // 重新渲染整張卡，保持狀態一致
-      });
-
-      // Day 切換
       document.querySelectorAll(".chip").forEach(chip => {
         chip.addEventListener("click", () => {
           const id = chip.getAttribute("data-day-id");
@@ -964,61 +990,55 @@
         });
       });
 
-      renderDayItinerary(trip);
+      renderDayContent(trip);
     }
 
-    function renderPrepList(trip) {
-      const container = document.getElementById("prepList");
-      if (!container) return;
-
-      if (!trip.checklist || trip.checklist.length === 0) {
-        container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在上方新增。</div>`;
-        return;
+    // 行前 / 每日行程內容
+    function renderDayContent(trip) {
+      const container = document.getElementById("dayContent");
+      let dayId = trip.activeDayId;
+      if (!dayId || (dayId !== "prep" && !trip.days.some(d => d.id === dayId))) {
+        dayId = trip.days[0] && trip.days[0].id;
+        trip.activeDayId = dayId;
       }
 
-      let html = "";
-      trip.checklist.forEach(item => {
-        html += `
-          <div class="check-row">
-            <input type="checkbox" data-prep-id="${item.id}" ${item.done ? "checked" : ""}/>
-            <div class="check-text ${item.done ? "done" : ""}">${item.text}</div>
-            <button class="btn btn-danger btn-icon" data-prep-del="${item.id}">✕</button>
+      if (dayId === "prep") {
+        // 行前：用原本的 checklist 畫面
+        let html = `
+          <div>
+            <div class="small-label">行前準備清單</div>
+            <div id="prepList"></div>
+            <div style="margin-top:10px;">
+              <div class="small-label">新增一項行前準備</div>
+              <div class="row">
+                <div class="col">
+                  <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
+                </div>
+                <button class="btn btn-primary btn-icon" id="addPrepBtn">＋</button>
+              </div>
+            </div>
           </div>
         `;
-      });
+        container.innerHTML = html;
+        renderPrepList(trip);
 
-      container.innerHTML = html;
-
-      container.querySelectorAll("[data-prep-id]").forEach(cb => {
-        cb.addEventListener("change", () => {
-          const id = cb.getAttribute("data-prep-id");
-          const target = trip.checklist.find(i => i.id === id);
-          if (target) {
-            target.done = cb.checked;
-            saveRoot();
-            renderItineraryView();
-          }
-        });
-      });
-
-      container.querySelectorAll("[data-prep-del]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-prep-del");
-          trip.checklist = trip.checklist.filter(i => i.id !== id);
+        document.getElementById("addPrepBtn").addEventListener("click", () => {
+          const input = document.getElementById("prepInput");
+          const text = input.value.trim();
+          if (!text) return;
+          trip.checklist.push({
+            id: generateId("prep"),
+            text,
+            done: false
+          });
+          input.value = "";
           saveRoot();
-          renderItineraryView();
+          renderPrepList(trip);
         });
-      });
-    }
-
-    function renderDayItinerary(trip) {
-      const container = document.getElementById("dayContent");
-      const dayId = trip.activeDayId || (trip.days[0] && trip.days[0].id);
-      if (!dayId) {
-        container.innerHTML = `<div class="empty">尚未建立行程日</div>`;
         return;
       }
 
+      // 一般每日行程
       const list = trip.itinerary[dayId] || [];
       let listHtml = "";
 
@@ -1027,12 +1047,6 @@
       } else {
         listHtml = `<div class="list">`;
         list.forEach(item => {
-          const mapQuery = encodeURIComponent(
-            [trip.destination || "", item.title || ""].filter(Boolean).join(" ")
-          );
-          const mapUrl =
-            "https://www.google.com/maps/search/?api=1&query=" + mapQuery;
-
           listHtml += `
             <div class="list-item">
               <div class="list-main">
@@ -1040,12 +1054,7 @@
                 <div class="list-title">${item.title || "未命名行程"}</div>
                 ${item.note ? `<div class="list-note">${item.note}</div>` : ""}
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <a class="btn btn-ghost btn-sm" href="${mapUrl}" target="_blank" rel="noopener">
-                  地圖
-                </a>
-                <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
-              </div>
+              <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
             </div>
           `;
         });
@@ -1087,7 +1096,7 @@
         if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
         trip.itinerary[dayId].push(item);
         saveRoot();
-        renderDayItinerary(trip);
+        renderDayContent(trip);
       });
 
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
@@ -1095,7 +1104,52 @@
           const id = btn.getAttribute("data-del-itinerary");
           trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== id);
           saveRoot();
-          renderDayItinerary(trip);
+          renderDayContent(trip);
+        });
+      });
+    }
+
+    // 行前 checklist 共用
+    function renderPrepList(trip) {
+      const container = document.getElementById("prepList");
+      if (!container) return;
+
+      if (!trip.checklist || trip.checklist.length === 0) {
+        container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
+        return;
+      }
+
+      let html = "";
+      trip.checklist.forEach(item => {
+        html += `
+          <div class="check-row">
+            <input type="checkbox" data-prep-id="${item.id}" ${item.done ? "checked" : ""}/>
+            <div class="check-text ${item.done ? "done" : ""}">${item.text}</div>
+            <button class="btn btn-danger btn-icon" data-prep-del="${item.id}">✕</button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-prep-id]").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const id = cb.getAttribute("data-prep-id");
+          const target = trip.checklist.find(i => i.id === id);
+          if (target) {
+            target.done = cb.checked;
+            saveRoot();
+            renderPrepList(trip);
+          }
+        });
+      });
+
+      container.querySelectorAll("[data-prep-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-prep-del");
+          trip.checklist = trip.checklist.filter(i => i.id !== id);
+          saveRoot();
+          renderPrepList(trip);
         });
       });
     }
@@ -1244,7 +1298,8 @@
                 <button class="flight-delete-btn" data-fl-del="${f.id}">✕</button>
                 <div class="flight-card-top">
                   <div class="flight-card-top-left">
-                    ${dateText ? dateText : ""}${timeText ? " · " + timeText : ""}
+                    ${dateText ? dateText : ""}
+                    ${timeText ? " · " + timeText : ""}
                   </div>
                   <div class="flight-card-top-right">
                     FLIGHT${f.flightNo ? " · " + f.flightNo : ""}
@@ -1281,7 +1336,7 @@
       });
     }
 
-    // ====== 記帳 Tab（含匯率） ======
+    // ====== 記帳 Tab（含匯率設定） ======
     function renderExpensesView() {
       const trip = getCurrentTrip();
       const cur = trip.currency || "JPY";
@@ -1294,10 +1349,27 @@
         .filter(e => e.method === "card")
         .reduce((s, e) => s + (e.amount || 0), 0);
 
-      let fxLabel = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）";
-      if (trip.fxRate != null) {
-        const dText = trip.fxDate ? `（${formatDateYMD(trip.fxDate)}）` : "";
-        fxLabel = `目前匯率：1 ${cur} ≈ ${trip.fxRate.toFixed(2)} TWD ${dText}`;
+      const rateObj = trip.exchangeRate;
+      const useableRate =
+        rateObj &&
+        typeof rateObj.rate === "number" &&
+        rateObj.rate > 0 &&
+        rateObj.base === cur &&
+        rateObj.target === "TWD"
+          ? rateObj.rate
+          : null;
+
+      const totalTWD = useableRate ? total * useableRate : null;
+
+      let rateInfoText = "";
+      if (cur === "TWD") {
+        rateInfoText = "主要貨幣為 TWD，無需設定匯率。";
+      } else if (useableRate) {
+        rateInfoText = `目前匯率：1 ${cur} ≈ ${useableRate.toFixed(
+          2
+        )} TWD${rateObj.updatedAt ? `（${rateObj.updatedAt}）` : ""}`;
+      } else {
+        rateInfoText = "目前尚未設定匯率（若主要貨幣為 TWD 則不需設定）。";
       }
 
       let html = `
@@ -1310,20 +1382,36 @@
             <div class="small-label">匯率設定（${cur} ➜ TWD）</div>
             <div class="row">
               <div class="col">
-                <input id="fxRateInput" type="number" placeholder="1 ${cur} = ? TWD" />
+                <input id="rateInput" placeholder="1 ${cur} = ? TWD" />
               </div>
-              <button class="btn btn-ghost btn-sm" id="queryFxBtn">查詢匯率</button>
-              <button class="btn btn-primary btn-sm" id="saveFxBtn">儲存匯率</button>
+              <button class="btn btn-ghost btn-sm" id="fetchRateBtn">查詢中...</button>
+              <button class="btn btn-primary btn-sm" id="saveRateBtn">儲存匯率</button>
             </div>
-            <div style="font-size:11px;color:var(--text-sub);" id="fxInfoLabel">
-              ${fxLabel}
+            <div style="font-size:11px;color:var(--text-sub);" id="rateStatusText">
+              ${rateInfoText}
             </div>
           </div>
 
           <div>
-            <div class="summary-row"><span>總支出</span><strong>${formatAmount(total, cur)}</strong></div>
-            <div class="summary-row"><span>現金</span><strong>${formatAmount(cash, cur)}</strong></div>
-            <div class="summary-row"><span>信用卡</span><strong>${formatAmount(card, cur)}</strong></div>
+            <div class="summary-row">
+              <span>總支出</span><strong>${formatAmount(total, cur)}</strong>
+            </div>
+            <div class="summary-row">
+              <span>現金</span><strong>${formatAmount(cash, cur)}</strong>
+            </div>
+            <div class="summary-row">
+              <span>信用卡</span><strong>${formatAmount(card, cur)}</strong>
+            </div>
+            <div class="summary-row">
+              <span>約當 TWD 總支出</span>
+              <strong>
+                ${
+                  totalTWD != null
+                    ? "TWD " + totalTWD.toFixed(0)
+                    : "未設定匯率"
+                }
+              </strong>
+            </div>
           </div>
 
           <div style="margin-top:10px;">
@@ -1360,49 +1448,84 @@
 
       mainView.innerHTML = html;
 
-      // 把已存的匯率帶回輸入框
-      if (trip.fxRate != null) {
-        document.getElementById("fxRateInput").value = trip.fxRate.toFixed(2);
+      // 匯率欄位：帶入目前儲存的值（可以再手動改）
+      const rateInput = document.getElementById("rateInput");
+      if (useableRate) {
+        rateInput.value = useableRate.toFixed(2);
       }
 
-      const fxRateInput = document.getElementById("fxRateInput");
-      const queryFxBtn = document.getElementById("queryFxBtn");
-      const saveFxBtn = document.getElementById("saveFxBtn");
+      const fetchBtn = document.getElementById("fetchRateBtn");
+      const saveRateBtn = document.getElementById("saveRateBtn");
+      const rateStatusTextEl = document.getElementById("rateStatusText");
 
-      queryFxBtn.addEventListener("click", async () => {
-        queryFxBtn.disabled = true;
-        const oldText = queryFxBtn.textContent;
-        queryFxBtn.textContent = "查詢中…";
+      // 查詢匯率
+      fetchBtn.textContent = "查詢匯率";
+      fetchBtn.addEventListener("click", async () => {
+        if (cur === "TWD") {
+          alert("主要貨幣為 TWD，無需查詢匯率。");
+          return;
+        }
+        fetchBtn.disabled = true;
+        const original = fetchBtn.textContent;
+        fetchBtn.textContent = "查詢中…";
 
         try {
-          const { rate, date } = await fetchFxRate(cur);
-          fxRateInput.value = rate.toFixed(2);
-          trip.fxRate = rate;
-          trip.fxDate = date;
+          const result = await fetchRateToTWD(cur);
+          const rate = result.rate;
+          const updatedAt = result.updatedAt;
+          rateInput.value = rate.toFixed(2);
+
+          trip.exchangeRate = {
+            base: cur,
+            target: "TWD",
+            rate,
+            updatedAt
+          };
           saveRoot();
-          renderExpensesView();
+
+          rateStatusTextEl.textContent =
+            `目前匯率：1 ${cur} ≈ ${rate.toFixed(2)} TWD` +
+            (updatedAt ? `（${updatedAt}）` : "");
+          renderHeader();
         } catch (err) {
           console.error(err);
-          alert("匯率查詢失敗：取得匯率資料失敗（" + err.message + "）");
+          alert("匯率查詢失敗：『" + err.message + "』\n\n你仍然可以手動輸入匯率後按「儲存匯率」。");
         } finally {
-          queryFxBtn.disabled = false;
-          queryFxBtn.textContent = oldText;
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = original;
         }
       });
 
-      saveFxBtn.addEventListener("click", () => {
-        const raw = fxRateInput.value.replace(",", ".");
-        const val = parseFloat(raw);
-        if (isNaN(val)) {
-          alert("請輸入數字匯率");
+      // 儲存匯率（可手動修改後按）
+      saveRateBtn.addEventListener("click", () => {
+        const v = parseFloat(rateInput.value);
+        if (isNaN(v) || v <= 0) {
+          alert("請輸入正確的匯率數字（> 0）。");
           return;
         }
-        trip.fxRate = val;
-        if (!trip.fxDate) {
-          trip.fxDate = new Date().toISOString().substring(0,10);
-        }
+        const now = new Date();
+        const label =
+          now.getFullYear() +
+          "-" +
+          String(now.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(now.getDate()).padStart(2, "0") +
+          " " +
+          String(now.getHours()).padStart(2, "0") +
+          ":" +
+          String(now.getMinutes()).padStart(2, "0");
+
+        trip.exchangeRate = {
+          base: cur,
+          target: "TWD",
+          rate: v,
+          updatedAt: label
+        };
         saveRoot();
-        renderExpensesView();
+
+        rateStatusTextEl.textContent =
+          `目前匯率：1 ${cur} ≈ ${v.toFixed(2)} TWD（${label}）`;
+        renderHeader();
       });
 
       renderExpenseList(trip);
@@ -1511,7 +1634,7 @@
 
           <div style="margin-top:10px;" id="shopList"></div>
         </section>
-      ";
+     `;
 
       mainView.innerHTML = html;
       renderShopList(trip);
