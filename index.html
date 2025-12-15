@@ -1162,8 +1162,22 @@
     let dayMarkerLayer = null;
 
     function initLeafletMap() {
-      if (dayLeafletMap) return dayLeafletMap;
-      dayLeafletMap = L.map("dayMap", { zoomControl: false });
+      const mapEl = document.getElementById("dayMap");
+      if (!mapEl) return null;
+
+      // 如果已經有 map，但綁的是舊的 DOM，就先移除舊的
+      if (dayLeafletMap) {
+        if (dayLeafletMap._container !== mapEl) {
+          dayLeafletMap.remove();
+          dayLeafletMap = null;
+          dayMarkerLayer = null;
+        } else {
+          return dayLeafletMap;
+        }
+      }
+
+      // 重新建立新的 map，綁到目前的 #dayMap 上
+      dayLeafletMap = L.map(mapEl, { zoomControl: false });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -1179,10 +1193,13 @@
       if (!container) return;
 
       const map = initLeafletMap();
+      if (!map) return;
+
       setTimeout(() => {
         map.invalidateSize();
       }, 50);
 
+      if (!dayMarkerLayer) return;
       dayMarkerLayer.clearLayers();
 
       const items = (trip.itinerary[dayId] || []).filter(
