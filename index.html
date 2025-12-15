@@ -693,6 +693,48 @@
       background: #e5e7eb;
       margin-bottom: 8px;
     }
+    
+    .autocomplete-wrap {
+      position: relative;
+    }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(15,23,42,0.18);
+      max-height: 220px;
+      overflow-y: auto;
+      font-size: 13px;
+      z-index: 50; /* 要蓋過卡片內容，但低於側邊抽屜 */
+      display: none;
+    }
+
+    .autocomplete-item {
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .autocomplete-item:hover {
+      background: #eff6ff;
+    }
+
+    .autocomplete-item-main {
+      display: block;
+      font-weight: 500;
+    }
+
+    .autocomplete-item-sub {
+      display: block;
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
 
     /* ===== 天氣區塊 ===== */
     .weather-box {
@@ -1055,6 +1097,120 @@
       };
     }
 
+    // 較多筆搜尋結果（給自動完成用）
+async function searchPlaceSuggestions(query, cityHint) {
+  const q = (cityHint ? `${query} ${cityHint}` : query).trim();
+  if (!q) return [];
+  const url =
+    "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=" +
+    encodeURIComponent(q);
+  const res = await fetch(url, {
+    headers: {
+      "Accept-Language": "zh-TW,en;q=0.8"
+    }
+  });
+  if (!res.ok) {
+    console.error("searchPlaceSuggestions HTTP", res.status);
+    return [];
+  }
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.map(item => {
+    const full = item.display_name || "";
+    const parts = full.split(",");
+    const main = parts[0] ? parts[0].trim() : full;
+    const sub = parts.slice(1).join(",").trim();
+    return {
+      name: main,
+      fullName: full,
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      sub
+    };
+  });
+}
+
+// 綁定「行程名稱」輸入框的自動完成
+function setupItineraryTitleAutocomplete(inputEl, listEl, trip) {
+  if (!inputEl || !listEl) return;
+
+  let timer = null;
+  let currentSuggestions = [];
+
+  function hideList() {
+    listEl.style.display = "none";
+    listEl.innerHTML = "";
+  }
+
+  inputEl.addEventListener("input", () => {
+    const q = inputEl.value.trim();
+    // 編輯時重新輸入，先清掉之前選到的座標
+    delete inputEl.dataset.lat;
+    delete inputEl.dataset.lon;
+
+    if (timer) clearTimeout(timer);
+
+    if (q.length < 2) {
+      hideList();
+      return;
+    }
+
+    timer = setTimeout(async () => {
+      try {
+        const suggestions = await searchPlaceSuggestions(q, trip.destination);
+        currentSuggestions = suggestions;
+        if (!suggestions.length) {
+          hideList();
+          return;
+        }
+        listEl.innerHTML = suggestions
+          .map(
+            (s, idx) => `
+            <div class="autocomplete-item" data-idx="${idx}">
+              <span class="autocomplete-item-main">${s.name}</span>
+              ${
+                s.sub
+                  ? `<span class="autocomplete-item-sub">${s.sub}</span>`
+                  : ""
+              }
+            </div>`
+          )
+          .join("");
+        listEl.style.display = "block";
+
+        listEl.querySelectorAll(".autocomplete-item").forEach(itemEl => {
+          itemEl.addEventListener("click", () => {
+            const idx = parseInt(itemEl.getAttribute("data-idx"), 10);
+            const s = currentSuggestions[idx];
+            if (!s) return;
+            inputEl.value = s.name;
+            inputEl.dataset.lat = s.lat;
+            inputEl.dataset.lon = s.lon;
+
+            // 同時寫入快取，之後地圖不用再打一次 API
+            if (!trip.placeCache) trip.placeCache = {};
+            trip.placeCache[s.name] = { lat: s.lat, lon: s.lon };
+            saveRoot();
+
+            hideList();
+          });
+        });
+      } catch (e) {
+        console.error("autoComplete error", e);
+        hideList();
+      }
+    }, 300);
+  });
+
+  // 點畫面其他地方收起
+  document.addEventListener("click", e => {
+    if (!listEl.contains(e.target) && e.target !== inputEl) {
+      hideList();
+    }
+  });
+}
+
+
     // ====== 目的地座標快取（給天氣 & 地圖共用） ======
     async function getTripLatLon(trip) {
       if (trip.geo && typeof trip.geo.lat === "number" && typeof trip.geo.lon === "number") {
@@ -1162,120 +1318,129 @@
     let dayMarkerLayer = null;
 
     function initLeafletMap() {
-      const mapEl = document.getElementById("dayMap");
-      if (!mapEl) return null;
+  const mapEl = document.getElementById("dayMap");
+  if (!mapEl) return null;
 
-      // 如果已經有 map，但綁的是舊的 DOM，就先移除舊的
-      if (dayLeafletMap) {
-        if (dayLeafletMap._container !== mapEl) {
-          dayLeafletMap.remove();
-          dayLeafletMap = null;
-          dayMarkerLayer = null;
-        } else {
-          return dayLeafletMap;
-        }
-      }
-
-      // 重新建立新的 map，綁到目前的 #dayMap 上
-      dayLeafletMap = L.map(mapEl, { zoomControl: false });
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap"
-      }).addTo(dayLeafletMap);
-
-      dayMarkerLayer = L.layerGroup().addTo(dayLeafletMap);
+  // 如果已經有 map，但綁的是舊的 DOM，就移除重建
+  if (dayLeafletMap) {
+    if (dayLeafletMap._container !== mapEl) {
+      dayLeafletMap.remove();
+      dayLeafletMap = null;
+      dayMarkerLayer = null;
+    } else {
       return dayLeafletMap;
     }
+  }
+
+  dayLeafletMap = L.map(mapEl, { zoomControl: false });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap"
+  }).addTo(dayLeafletMap);
+
+  dayMarkerLayer = L.layerGroup().addTo(dayLeafletMap);
+  return dayLeafletMap;
+}
 
     async function updateDayMap(trip, dayId) {
-      const container = document.getElementById("dayMap");
-      if (!container) return;
+  const container = document.getElementById("dayMap");
+  if (!container) return;
 
-      const map = initLeafletMap();
-      if (!map) return;
+  const map = initLeafletMap();
+  if (!map) return;
 
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 50);
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 50);
 
-      if (!dayMarkerLayer) return;
-      dayMarkerLayer.clearLayers();
+  if (!dayMarkerLayer) return;
+  dayMarkerLayer.clearLayers();
 
-      const items = (trip.itinerary[dayId] || []).filter(
-        i => i.title && i.title.trim()
-      );
+  const items = (trip.itinerary[dayId] || []).filter(
+    i => i.title && i.title.trim()
+  );
 
-      if (!trip.placeCache) trip.placeCache = {};
-      const boundsPoints = [];
+  if (!trip.placeCache) trip.placeCache = {};
+  const boundsPoints = [];
 
-      // 逐筆地點查座標（帶城市提示以提高成功率）
-      for (const item of items) {
-        const key = item.title.trim();
-        let geo = trip.placeCache[key];
-        if (!geo) {
-          try {
-            geo = await geocodePlace(key, trip.destination);
-          } catch (e) {
-            console.error("geocode 失敗:", key, e);
-          }
-          if (geo) {
-            trip.placeCache[key] = geo;
-            saveRoot();
-          }
+  for (const item of items) {
+    let geo = null;
+
+    // 1. 優先用行程本身存的座標
+    if (typeof item.lat === "number" && typeof item.lon === "number") {
+      geo = { lat: item.lat, lon: item.lon };
+    } else {
+      // 2. 再看 placeCache 有沒有
+      const key = item.title.trim();
+      if (trip.placeCache[key]) {
+        geo = trip.placeCache[key];
+      } else {
+        // 3. 最後才打一次 geocode
+        try {
+          geo = await geocodePlace(key, trip.destination);
+        } catch (e) {
+          console.error("geocode 失敗:", key, e);
         }
         if (geo) {
-          const m = L.marker([geo.lat, geo.lon]).bindPopup(item.title);
-          dayMarkerLayer.addLayer(m);
-          boundsPoints.push([geo.lat, geo.lon]);
+          trip.placeCache[key] = geo;
+          saveRoot();
         }
       }
+    }
 
-      // 加上目前位置
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            const { latitude, longitude } = pos.coords;
-            const me = L.circleMarker([latitude, longitude], {
-              radius: 6,
-              color: "#ef4444",
-              fillColor: "#fecaca",
-              fillOpacity: 0.9
-            }).bindPopup("目前位置");
-            dayMarkerLayer.addLayer(me);
-            boundsPoints.push([latitude, longitude]);
-            if (boundsPoints.length) {
-              map.fitBounds(boundsPoints, { padding: [30, 30] });
-            }
-          },
-          err => {
-            console.warn("定位失敗：", err);
-            if (boundsPoints.length) {
-              map.fitBounds(boundsPoints, { padding: [30, 30] });
-            }
-          },
-          { enableHighAccuracy: true, timeout: 5000 }
-        );
-      } else {
+    if (geo) {
+      const m = L.marker([geo.lat, geo.lon]).bindPopup(item.title);
+      dayMarkerLayer.addLayer(m);
+      boundsPoints.push([geo.lat, geo.lon]);
+    }
+  }
+
+  // 加上目前位置
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords;
+        const me = L.circleMarker([latitude, longitude], {
+          radius: 6,
+          color: "#ef4444",
+          fillColor: "#fecaca",
+          fillOpacity: 0.9
+        }).bindPopup("目前位置");
+        dayMarkerLayer.addLayer(me);
+        boundsPoints.push([latitude, longitude]);
         if (boundsPoints.length) {
           map.fitBounds(boundsPoints, { padding: [30, 30] });
         }
-      }
-
-      // 若完全沒有地點，就以目的地城市為中心
-      if (!boundsPoints.length) {
-        const geo = await getTripLatLon(trip);
-        if (geo) {
-          const m = L.marker([geo.lat, geo.lon]).bindPopup(
-            trip.destination || "目的地"
-          );
-          dayMarkerLayer.addLayer(m);
-          map.setView([geo.lat, geo.lon], 11);
-        } else {
-          map.setView([23.5, 121], 6);
+      },
+      err => {
+        console.warn("定位失敗：", err);
+        if (boundsPoints.length) {
+          map.fitBounds(boundsPoints, { padding: [30, 30] });
         }
-      }
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  } else {
+    if (boundsPoints.length) {
+      map.fitBounds(boundsPoints, { padding: [30, 30] });
     }
+  }
+
+  // 若完全沒有地點，就以目的地城市為中心
+  if (!boundsPoints.length) {
+    const geo = await getTripLatLon(trip);
+    if (geo) {
+      const m = L.marker([geo.lat, geo.lon]).bindPopup(
+        trip.destination || "目的地"
+      );
+      dayMarkerLayer.addLayer(m);
+      map.setView([geo.lat, geo.lon], 11);
+    } else {
+      map.setView([23.5, 121], 6);
+    }
+  }
+}
 
     // ====== 航班相關（保留原本程式） ======
     const IATA_TO_CITY_ZH = {
@@ -1768,38 +1933,44 @@
 
       const formHtml = `
         <div>
-          <div class="small-label">當日天氣</div>
-          <div id="dayWeatherBox" class="weather-box">
-            <div class="weather-loading">讀取天氣中…</div>
-          </div>
+          <div>
+    <div class="small-label">當日天氣</div>
+    <div id="dayWeatherBox" class="weather-box">
+      <div class="weather-loading">讀取天氣中…</div>
+    </div>
 
-          <div class="small-label">當日行程地圖</div>
-          <div id="dayMap" class="map-container"></div>
+    <div class="small-label">當日行程地圖</div>
+    <div id="dayMap" class="map-container"></div>
 
-          <div style="margin-top:6px;">
-            <div class="small-label">新增行程項目</div>
-            <div class="row">
-              <div class="col">
-                <input id="itTime" class="compact-time" type="time" placeholder="時間（例如 09:00）" />
-              </div>
-              <div class="col">
-                <input id="itTitle" placeholder="行程名稱（地標/地址）" />
-              </div>
-            </div>
-            <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
-            <div style="margin-top:8px; text-align:right;">
-              <button class="btn btn-primary" id="addItineraryBtn">＋ 新增行程</button>
-            </div>
-          </div>
+    <div style="margin-top:6px;">
+      <div class="small-label">新增行程項目</div>
+      <div class="row">
+        <div class="col">
+          <input id="itTime" class="compact-time" type="time" placeholder="時間（例如 09:00）" />
         </div>
+        <div class="col autocomplete-wrap">
+          <input id="itTitle" placeholder="行程名稱（地標/地址）" autocomplete="off" />
+          <div id="itTitleSuggest" class="autocomplete-list"></div>
+        </div>
+      </div>
+      <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
+      <div style="margin-top:8px; text-align:right;">
+        <button class="btn btn-primary" id="addItineraryBtn">＋ 新增行程</button>
+      </div>
+    </div>
+  </div>
       `;
 
       container.innerHTML = formHtml + listHtml;
 
       const timeInput = document.getElementById("itTime");
-      const titleInput = document.getElementById("itTitle");
-      const noteInput = document.getElementById("itNote");
-      const addBtn = document.getElementById("addItineraryBtn");
+const titleInput = document.getElementById("itTitle");
+const noteInput = document.getElementById("itNote");
+const addBtn = document.getElementById("addItineraryBtn");
+const titleSuggestBox = document.getElementById("itTitleSuggest");
+
+// 綁定「像地圖一樣的地點搜尋」自動完成
+setupItineraryTitleAutocomplete(titleInput, titleSuggestBox, trip);
 
       timeInput.addEventListener("blur", () => {
         if (!timeInput.value) return;
@@ -1807,38 +1978,64 @@
       });
 
       addBtn.onclick = () => {
-        const time = parseTimeString(timeInput.value);
-        const title = titleInput.value.trim();
-        const note = noteInput.value.trim();
+  const time = parseTimeString(timeInput.value);
+  const title = titleInput.value.trim();
+  const note = noteInput.value.trim();
 
-        if (!time && !title && !note) return;
+  if (!time && !title && !note) return;
 
-        if (editingItineraryId) {
-          const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItineraryId);
-          if (target) {
-            target.time = time;
-            target.title = title || "未命名行程";
-            target.note = note;
-          }
-        } else {
-          const item = {
-            id: generateId("it"),
-            time,
-            title: title || "未命名行程",
-            note
-          };
-          if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
-          trip.itinerary[dayId].push(item);
-        }
+  // 從 titleInput.dataset 取出由自動完成帶入的座標
+  let lat = null;
+  let lon = null;
+  if (titleInput.dataset.lat && titleInput.dataset.lon) {
+    lat = parseFloat(titleInput.dataset.lat);
+    lon = parseFloat(titleInput.dataset.lon);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      // 同步寫入 placeCache（以行程名稱為 key）
+      if (!trip.placeCache) trip.placeCache = {};
+      trip.placeCache[title || "未命名行程"] = { lat, lon };
+    } else {
+      lat = null;
+      lon = null;
+    }
+  }
 
-        editingItineraryId = null;
-        addBtn.textContent = "＋ 新增行程";
-        timeInput.value = "";
-        titleInput.value = "";
-        noteInput.value = "";
-        saveRoot();
-        renderDayContent(trip);
-      };
+  if (editingItineraryId) {
+    const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItineraryId);
+    if (target) {
+      target.time = time;
+      target.title = title || "未命名行程";
+      target.note = note;
+      if (lat != null && lon != null) {
+        target.lat = lat;
+        target.lon = lon;
+      }
+    }
+  } else {
+    const item = {
+      id: generateId("it"),
+      time,
+      title: title || "未命名行程",
+      note
+    };
+    if (lat != null && lon != null) {
+      item.lat = lat;
+      item.lon = lon;
+    }
+    if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
+    trip.itinerary[dayId].push(item);
+  }
+
+  editingItineraryId = null;
+  addBtn.textContent = "＋ 新增行程";
+  timeInput.value = "";
+  titleInput.value = "";
+  noteInput.value = "";
+  delete titleInput.dataset.lat;
+  delete titleInput.dataset.lon;
+  saveRoot();
+  renderDayContent(trip);
+};
 
       container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -1860,17 +2057,24 @@
       });
 
       container.querySelectorAll("[data-edit-itinerary]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-edit-itinerary");
-          const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
-          if (!item) return;
-          timeInput.value = item.time || "";
-          titleInput.value = item.title || "";
-          noteInput.value = item.note || "";
-          editingItineraryId = id;
-          addBtn.textContent = "儲存行程";
-        });
-      });
+  btn.addEventListener("click", () => {
+    const id = btn.getAttribute("data-edit-itinerary");
+    const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
+    if (!item) return;
+    timeInput.value = item.time || "";
+    titleInput.value = item.title || "";
+    noteInput.value = item.note || "";
+    if (typeof item.lat === "number" && typeof item.lon === "number") {
+      titleInput.dataset.lat = item.lat;
+      titleInput.dataset.lon = item.lon;
+    } else {
+      delete titleInput.dataset.lat;
+      delete titleInput.dataset.lon;
+    }
+    editingItineraryId = id;
+    addBtn.textContent = "儲存行程";
+  });
+});
 
       // 更新地圖與天氣
       updateDayMap(trip, dayId);
