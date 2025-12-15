@@ -1,129 +1,236 @@
-<script>
-// ====== 地理編碼與天氣查詢共用變數 ======
-let geoCache = {};
-let mapInstance = null;
-let markersLayer = null;
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3.4.15/dist/vue.global.prod.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
 
-// 取得座標（使用 open-meteo geocoding）
-async function geocodeLocation(name) {
-  const q = (name || "").trim();
-  if (!q) return null;
-  if (geoCache[q]) return geoCache[q];
+<body class="bg-gray-100 text-gray-800">
+  <div id="app" class="max-w-md mx-auto bg-white shadow-lg min-h-screen relative overflow-hidden">
 
-  const res = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=zh_TW&format=json`
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!data.results || !data.results.length) return null;
-  const r = data.results[0];
-  const result = { lat: r.latitude, lon: r.longitude, name: r.name, country: r.country };
-  geoCache[q] = result;
-  return result;
-}
+    <!-- 左上三線選單 -->
+    <div class="absolute top-4 left-4 z-30">
+      <button @click="toggleMenu" class="text-3xl">☰</button>
+    </div>
 
-// 取得天氣
-async function fetchWeather(lat, lon) {
-  const res = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return {
-    max: data.daily.temperature_2m_max[0],
-    min: data.daily.temperature_2m_min[0],
-    code: data.daily.weathercode[0],
-  };
-}
+    <!-- 側邊選單 -->
+    <transition name="slide">
+      <div v-if="menuOpen" class="absolute top-0 left-0 w-72 h-full bg-white shadow-lg z-40 p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold">我的旅程</h2>
+          <button @click="toggleMenu" class="text-xl">✕</button>
+        </div>
+        <button
+          @click="createTrip"
+          class="w-full border-2 border-dashed border-teal-400 text-teal-600 py-2 rounded mb-4"
+        >
+          ＋ 建立新旅程
+        </button>
+        <div v-for="(t,i) in trips" :key="i"
+          @click="selectTrip(i)"
+          class="p-3 mb-2 rounded cursor-pointer"
+          :class="{'bg-teal-50': currentTripIndex === i}">
+          <div class="font-bold">{{ t.name || '未命名旅程' }}</div>
+          <div class="text-sm text-gray-500">{{ t.daysCount }} 天 | {{ t.startDate }}</div>
+        </div>
+      </div>
+    </transition>
 
-// Leaflet 天氣圖示對照
-const weatherIcons = {
-  0: "☀️ 晴天",
-  1: "🌤 少雲",
-  2: "⛅ 多雲",
-  3: "☁️ 陰天",
-  45: "🌫 霧",
-  48: "🌫 凍霧",
-  51: "🌦 毛毛雨",
-  61: "🌧 小雨",
-  63: "🌧 中雨",
-  65: "🌧 大雨",
-  71: "❄️ 小雪",
-  73: "❄️ 中雪",
-  75: "❄️ 大雪",
-  95: "⛈ 雷雨",
-};
+    <!-- 主內容 -->
+    <div class="p-6 mt-10">
+      <h1 class="text-2xl font-bold mb-2">{{ currentTrip.name || '新旅程' }}</h1>
+      <div class="text-sm text-gray-500 mb-4">{{ currentTrip.daysCount }} 天行程 | {{ currentTrip.startDate }}</div>
 
-// 顯示每日地圖與天氣
-async function renderDailyMapAndWeather(dayData, mapContainerId, weatherContainerId) {
-  const mapContainer = document.getElementById(mapContainerId);
-  const weatherEl = document.getElementById(weatherContainerId);
-  if (!mapContainer || !dayData) return;
+      <!-- 日期切換 -->
+      <div class="flex space-x-2 overflow-x-auto mb-4">
+        <button
+          v-for="(d,idx) in currentTrip.days"
+          :key="idx"
+          @click="currentDayIndex = idx"
+          class="px-4 py-2 rounded-lg font-semibold"
+          :class="currentDayIndex === idx ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+        >
+          D{{ idx+1 }} {{ d.date }}
+        </button>
+      </div>
 
-  // 清空地圖與天氣
-  mapContainer.innerHTML = "";
-  weatherEl.innerHTML = "";
+      <!-- 天氣 -->
+      <div class="mb-3">
+        <h3 class="font-semibold mb-1">當日天氣</h3>
+        <div id="dailyWeather" class="text-sm text-gray-600"></div>
+      </div>
 
-  const geocodedPlaces = [];
+      <!-- 地圖 -->
+      <div>
+        <h3 class="font-semibold mb-1">當日行程地圖</h3>
+        <div id="dailyMap" class="w-full h-64 rounded-lg overflow-hidden shadow"></div>
+      </div>
 
-  // 1️⃣ 根據每日行程的每一個地點名稱去查座標
-  for (const item of dayData.items || []) {
-    if (item.place && item.place.trim() !== "") {
-      const loc = await geocodeLocation(item.place);
-      if (loc) geocodedPlaces.push(loc);
-    }
-  }
+      <!-- 行程項目 -->
+      <div class="mt-4">
+        <h3 class="font-semibold mb-2">行程安排</h3>
+        <div v-for="(item,i) in currentDay.items" :key="i" class="p-2 bg-gray-50 rounded mb-2">
+          <div class="text-sm">{{ item.time }} - {{ item.place }}</div>
+        </div>
 
-  // 2️⃣ 初始化 Leaflet 地圖
-  mapInstance = L.map(mapContainer, { zoomControl: true });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap",
-  }).addTo(mapInstance);
+        <div class="flex space-x-2 mt-2">
+          <input v-model="newItem.time" placeholder="時間" class="border px-2 py-1 w-1/3 rounded text-sm" />
+          <input v-model="newItem.place" placeholder="地點" class="border px-2 py-1 w-2/3 rounded text-sm" />
+        </div>
+        <button
+          @click="addItem"
+          class="mt-2 bg-blue-500 text-white text-sm px-4 py-1 rounded"
+        >
+          新增行程
+        </button>
+      </div>
+    </div>
 
-  markersLayer = L.layerGroup().addTo(mapInstance);
+    <!-- 底部導航 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2 shadow-lg">
+      <button class="text-center text-sm font-semibold text-blue-600">行程</button>
+      <button class="text-center text-sm text-gray-500">航班</button>
+      <button class="text-center text-sm text-gray-500">記帳</button>
+      <button class="text-center text-sm text-gray-500">購物</button>
+    </div>
+  </div>
 
-  // 3️⃣ 釘選所有行程地點
-  if (geocodedPlaces.length > 0) {
-    geocodedPlaces.forEach((p) => {
-      L.marker([p.lat, p.lon]).addTo(markersLayer).bindPopup(`${p.name}<br>${p.country || ""}`);
-    });
+  <!-- JS -->
+  <script>
+    const { createApp, onMounted, watch } = Vue;
 
-    // 調整視野
-    const bounds = L.latLngBounds(geocodedPlaces.map((p) => [p.lat, p.lon]));
-    mapInstance.fitBounds(bounds, { padding: [40, 40] });
-
-    // 4️⃣ 顯示天氣（取第一個地點）
-    const w = await fetchWeather(geocodedPlaces[0].lat, geocodedPlaces[0].lon);
-    if (w) {
-      weatherEl.innerHTML = `
-        <div class="bg-blue-50 rounded-lg p-3 text-gray-800 text-sm flex items-center justify-between">
-          <div>${weatherIcons[w.code] || "🌍"} ${w.min}° / ${w.max}°</div>
-          <div class="text-xs text-gray-500">資料來源：Open-Meteo（每日整體高 / 低溫）</div>
-        </div>`;
-    } else {
-      weatherEl.innerHTML = `<div class="text-gray-500 text-sm">無法取得天氣資料。</div>`;
-    }
-  } else {
-    weatherEl.innerHTML = `<div class="text-gray-500 text-sm">沒有可顯示的地點。</div>`;
-    mapInstance.setView([48.8566, 2.3522], 5); // 預設法國巴黎
-  }
-
-  // 5️⃣ 顯示使用者目前位置（若允許）
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const userMarker = L.circleMarker([latitude, longitude], {
-          radius: 6,
-          color: "#007bff",
-          fillColor: "#007bff",
-          fillOpacity: 0.8,
-        })
-          .addTo(markersLayer)
-          .bindPopup("📍 目前位置");
+    createApp({
+      data() {
+        return {
+          menuOpen: false,
+          trips: [
+            {
+              name: '荷比法10日遊',
+              startDate: '2025/11/19',
+              daysCount: 10,
+              days: Array.from({ length: 10 }, (_, i) => ({
+                date: `11/${19 + i}`,
+                items: []
+              }))
+            }
+          ],
+          currentTripIndex: 0,
+          currentDayIndex: 0,
+          newItem: { time: '', place: '' }
+        };
       },
-      (err) => console.warn("定位失敗：", err)
-    );
-  }
-}
-</script>
+      computed: {
+        currentTrip() { return this.trips[this.currentTripIndex]; },
+        currentDay() { return this.currentTrip.days[this.currentDayIndex]; }
+      },
+      methods: {
+        toggleMenu() { this.menuOpen = !this.menuOpen; },
+        selectTrip(i) { this.currentTripIndex = i; this.menuOpen = false; this.updateMapAndWeather(); },
+        createTrip() {
+          this.trips.push({
+            name: '新旅程 ' + (this.trips.length + 1),
+            startDate: new Date().toISOString().split('T')[0],
+            daysCount: 4,
+            days: Array.from({ length: 4 }, (_, i) => ({
+              date: new Date(Date.now() + i * 86400000).toLocaleDateString('zh-TW'),
+              items: []
+            }))
+          });
+        },
+        addItem() {
+          if (!this.newItem.place.trim()) return;
+          this.currentDay.items.push({ ...this.newItem });
+          this.newItem = { time: '', place: '' };
+          this.updateMapAndWeather();
+        },
+        async updateMapAndWeather() {
+          const dayData = this.currentDay;
+          const mapContainerId = "dailyMap";
+          const weatherContainerId = "dailyWeather";
+          renderDailyMapAndWeather(dayData, mapContainerId, weatherContainerId);
+        }
+      },
+      mounted() {
+        this.updateMapAndWeather();
+        watch(() => this.currentDayIndex, () => this.updateMapAndWeather());
+      }
+    }).mount("#app");
+
+
+    // ===== 以下是地圖與天氣整合 =====
+    let geoCache = {}, mapInstance = null, markersLayer = null;
+
+    async function geocodeLocation(name) {
+      if (!name.trim()) return null;
+      if (geoCache[name]) return geoCache[name];
+      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=zh_TW&format=json`);
+      const data = await res.json();
+      if (!data.results || !data.results.length) return null;
+      const r = data.results[0];
+      return geoCache[name] = { lat: r.latitude, lon: r.longitude, name: r.name, country: r.country };
+    }
+
+    async function fetchWeather(lat, lon) {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`);
+      const data = await res.json();
+      return { max: data.daily.temperature_2m_max[0], min: data.daily.temperature_2m_min[0], code: data.daily.weathercode[0] };
+    }
+
+    const weatherIcons = {
+      0: "☀️ 晴天", 1: "🌤 少雲", 2: "⛅ 多雲", 3: "☁️ 陰天", 45: "🌫 霧",
+      48: "🌫 凍霧", 51: "🌦 毛毛雨", 61: "🌧 小雨", 63: "🌧 中雨", 65: "🌧 大雨",
+      71: "❄️ 小雪", 73: "❄️ 中雪", 75: "❄️ 大雪", 95: "⛈ 雷雨"
+    };
+
+    async function renderDailyMapAndWeather(dayData, mapContainerId, weatherContainerId) {
+      const mapContainer = document.getElementById(mapContainerId);
+      const weatherEl = document.getElementById(weatherContainerId);
+      mapContainer.innerHTML = "";
+      weatherEl.innerHTML = "";
+
+      if (!dayData || !dayData.items.length) {
+        mapContainer.innerHTML = `<div class="text-gray-500 text-sm text-center py-4">尚未安排地點</div>`;
+        weatherEl.innerHTML = `<div class="text-gray-500 text-sm text-center py-2">無法取得天氣資料</div>`;
+        return;
+      }
+
+      const geocodedPlaces = [];
+      for (const item of dayData.items) {
+        const loc = await geocodeLocation(item.place);
+        if (loc) geocodedPlaces.push(loc);
+      }
+
+      mapInstance = L.map(mapContainer).setView([48.8566, 2.3522], 5);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(mapInstance);
+      markersLayer = L.layerGroup().addTo(mapInstance);
+
+      if (geocodedPlaces.length > 0) {
+        geocodedPlaces.forEach(p => L.marker([p.lat, p.lon]).addTo(markersLayer).bindPopup(`${p.name}`));
+        mapInstance.fitBounds(L.latLngBounds(geocodedPlaces.map(p => [p.lat, p.lon])), { padding: [40, 40] });
+
+        const w = await fetchWeather(geocodedPlaces[0].lat, geocodedPlaces[0].lon);
+        if (w) weatherEl.innerHTML = `<div class="bg-blue-50 p-2 rounded text-sm">${weatherIcons[w.code] || "🌍"} ${w.min}° / ${w.max}°</div>`;
+      } else {
+        weatherEl.innerHTML = `<div class="text-gray-500 text-sm text-center py-2">無法取得地點座標</div>`;
+      }
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const { latitude, longitude } = pos.coords;
+          L.circleMarker([latitude, longitude], { radius: 5, color: "#007bff", fillColor: "#007bff", fillOpacity: 0.8 })
+            .addTo(markersLayer)
+            .bindPopup("📍 目前位置");
+        });
+      }
+    }
+  </script>
+</body>
+</html>
