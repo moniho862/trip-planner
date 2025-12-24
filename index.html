@@ -20,7 +20,6 @@
 
   <style>
     :root {
-      --bg: #e9f3ff;
       --primary: #3b82f6;
       --card-bg: #ffffff;
       --text-main: #111827;
@@ -54,29 +53,12 @@
       gap: 10px;
     }
 
-    .header-left {
-      display:flex; align-items:flex-start; gap:10px;
-      min-width: 0; flex: 1;
-    }
-
-    .menu-btn {
-      border: none; background: transparent; font-size: 24px;
-      cursor: pointer; padding: 4px 6px; margin-right: 2px;
-      color: #111827; flex-shrink: 0;
-    }
+    .header-left { display:flex; align-items:flex-start; gap:10px; min-width: 0; flex: 1; }
+    .menu-btn { border: none; background: transparent; font-size: 24px; cursor: pointer; padding: 4px 6px; color: #111827; flex-shrink: 0; }
 
     .title-wrap { min-width: 0; }
-
-    .title {
-      display:flex; align-items:center; gap:8px;
-      font-size: 20px; font-weight: 700; line-height: 1.2;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .subtitle {
-      font-size: 12px; color: var(--text-sub); margin-top: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    .title { display:flex; align-items:center; gap:8px; font-size: 20px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .subtitle { font-size: 12px; color: var(--text-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .tag {
       font-size: 10px; padding: 2px 8px; border-radius: 999px;
@@ -103,12 +85,7 @@
       box-shadow: 0 12px 30px rgba(15,23,42,0.08);
       margin-bottom: 12px;
     }
-
-    .card-header {
-      display:flex; justify-content:space-between; align-items:center; gap: 8px;
-      margin-bottom: 8px;
-    }
-
+    .card-header { display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-bottom: 8px; }
     .card-title { font-size: 14px; font-weight: 600; }
     .small-label { font-size: 11px; color: var(--text-sub); margin-bottom: 4px; display: block; }
 
@@ -126,7 +103,7 @@
     .btn {
       border-radius: 999px; border: none; font-size: 13px;
       padding: 7px 14px; cursor: pointer; display: inline-flex;
-      align-items: center; gap: 4px; white-space: nowrap;
+      align-items: center; gap: 6px; white-space: nowrap;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-ghost { background: #eef2ff; color: #4f46e5; }
@@ -169,16 +146,9 @@
     .list-meta { font-size: 11px; color: var(--text-sub); margin-bottom: 2px; }
     .list-note { font-size: 12px; color: #4b5563; white-space: pre-wrap; }
 
-    .badge {
-      display:inline-block; font-size: 10px; padding: 2px 6px;
-      border-radius: 999px; background: #e5e7eb; color: #374151; margin-left: 4px;
-    }
-
     .empty { font-size: 12px; color: var(--text-sub); text-align:center; padding: 12px 4px 4px; }
 
-    .map-container {
-      width: 100%; height: 320px; border-radius: 16px; overflow: hidden; background: #e5e7eb;
-    }
+    .map-container { width: 100%; height: 340px; border-radius: 16px; overflow: hidden; background: #e5e7eb; }
 
     .weather-box {
       width: 100%; border-radius: 16px; padding: 8px 10px;
@@ -255,17 +225,14 @@
     .drawer.open{ transform: translateX(0); }
     .drawer-title{ font-size:16px; font-weight:600; margin-bottom: 12px; }
     .drawer-trip-list{ flex:1; overflow-y:auto; padding-right: 4px; }
-    .drawer-trip{
-      border-radius: 12px; padding: 8px 10px; margin-bottom: 6px;
-      background: #f3f4f6; cursor:pointer; font-size: 13px;
-    }
+    .drawer-trip{ border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; background: #f3f4f6; cursor:pointer; font-size: 13px; }
     .drawer-trip.active{ background: #dbeafe; border: 1px solid #3b82f6; }
     .drawer-trip-name{ font-weight:600; }
     .drawer-trip-sub{ font-size:11px; color: var(--text-sub); margin-top:2px; }
     .drawer-footer{ margin-top: 8px; font-size: 11px; color: var(--text-sub); }
     .drawer-close{ position:absolute; right: 12px; top: 10px; border:none; background: transparent; font-size: 20px; cursor:pointer; color: #6b7280; }
 
-    /* Modal */
+    /* Modal / Bottom Sheet */
     .modal-backdrop{
       position: fixed; inset: 0; background: rgba(15,23,42,.45);
       display:none; z-index: 20000; padding: 16px;
@@ -286,6 +253,7 @@
       padding: 12px 14px 14px; display:flex; justify-content: space-between; gap: 10px;
       border-top: 1px solid #eef2f7; background: #fafafa;
     }
+    .modal-desc{ font-size: 11px; color: var(--text-sub); margin-top: 6px; line-height: 1.35; }
 
     @media (min-width: 768px) {
       .app { margin-top: 12px; }
@@ -349,9 +317,7 @@
             </div>
           </div>
 
-          <div style="font-size:11px;color:var(--text-sub);margin-top:6px;">
-            變更目的地會清除地點座標快取，以避免釘選錯誤。
-          </div>
+          <div class="modal-desc">變更目的地會清除地點座標快取，以避免釘選錯誤。</div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-danger" id="m_clearTripBtn">清空本旅程資料</button>
@@ -359,6 +325,86 @@
             <button class="btn btn-ghost" id="m_cancelBtn">取消</button>
             <button class="btn btn-primary" id="m_saveBtn">儲存</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Itinerary Modal -->
+    <div id="itModalBackdrop" class="modal-backdrop">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="新增行程">
+        <div class="modal-header">
+          <div class="modal-title" id="itModalTitle">新增行程</div>
+          <button class="btn btn-ghost btn-sm" id="itModalCloseBtn">關閉</button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col">
+              <label class="small-label">時間</label>
+              <input id="itTime" type="time" />
+            </div>
+            <div class="col ac-wrap">
+              <label class="small-label">地點 / 地標 / 地址</label>
+              <input id="itTitle" placeholder="像 Google Map 搜尋一樣輸入" autocomplete="off" />
+              <div id="acList" class="ac-list" style="display:none;"></div>
+            </div>
+          </div>
+          <label class="small-label">備註（交通方式、門票等，可留白）</label>
+          <textarea id="itNote" placeholder="可留空"></textarea>
+          <div class="modal-desc">提示：選取建議清單後，會自動記錄座標，地圖頁會依當日行程自動釘選。</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" id="itModalDeleteBtn" style="display:none;">刪除</button>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button class="btn btn-ghost" id="itModalCancelBtn">取消</button>
+            <button class="btn btn-primary" id="itModalSaveBtn">儲存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Flight Modal -->
+    <div id="flModalBackdrop" class="modal-backdrop">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="新增航班">
+        <div class="modal-header">
+          <div class="modal-title">新增航班</div>
+          <button class="btn btn-ghost btn-sm" id="flModalCloseBtn">關閉</button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col">
+              <label class="small-label">班機號</label>
+              <input id="flNo" placeholder="例如：BR87" />
+            </div>
+            <div class="col" style="display:flex;flex-direction:column;">
+              <label class="small-label">起飛時間</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="flTime" type="time" style="flex:1;" />
+                <button class="btn btn-ghost btn-sm" id="flAutoTimeBtn" title="依班機號自動帶入時間">自動帶入</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label class="small-label">出發地</label>
+              <input id="flFrom" placeholder="例如：TPE" />
+            </div>
+            <div class="col">
+              <label class="small-label">抵達地</label>
+              <input id="flTo" placeholder="例如：HKG" />
+            </div>
+          </div>
+
+          <label class="small-label">備註</label>
+          <input id="flNote" placeholder="例如：去程 / 回程 / 航廈…" />
+
+          <div class="modal-desc" id="flAutoHint">
+            自動帶入時間需要你原本的航班資料來源（API / 解析邏輯）。此版已保留按鈕與流程，你可直接把舊版查詢程式貼回 <code>fetchFlightTimeByNumber()</code>。
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" id="flModalCancelBtn">取消</button>
+          <button class="btn btn-primary" id="flModalSaveBtn">儲存航班</button>
         </div>
       </div>
     </div>
@@ -420,11 +466,18 @@
     }
 
     /* ========= Storage / Data ========= */
-    const STORAGE_KEY = "tripPlanner_multi_v5_tabsFix";
-    let editingItineraryId = null;
+    const STORAGE_KEY = "tripPlanner_multi_v6_modalAdd";
     let currentTab = "itinerary";
     let itineraryInnerTab = "plan"; // plan | map
+
+    // itinerary modal state
+    let itModalMode = "add"; // add | edit
+    let itModalDayId = null;
+    let itEditingId = null;
     let selectedPlaceForItinerary = null;
+
+    // flight modal state
+    let flModalDayDate = null;
 
     function createEmptyTrip(name) {
       return {
@@ -443,7 +496,8 @@
         shopping: [],
         exchangeRate: { base: "JPY", target: "TWD", rate: null, updatedAt: "" },
         geo: null,
-        placeCache: {}
+        placeCache: {},
+        flightTimeCache: {} // key: `${date}|${flightNo}` => "HH:MM"
       };
     }
     function ensureTripShape(trip) {
@@ -454,6 +508,7 @@
       if (!trip.shopping) trip.shopping = [];
       if (!trip.exchangeRate) trip.exchangeRate = { base: trip.currency || "JPY", target: "TWD", rate: null, updatedAt: "" };
       if (!trip.placeCache) trip.placeCache = {};
+      if (!trip.flightTimeCache) trip.flightTimeCache = {};
     }
 
     function loadRoot() {
@@ -660,7 +715,6 @@
       if (!container) return;
 
       const map = initLeafletMap();
-      // 防止「切換頁籤」後地圖尺寸錯誤
       setTimeout(() => map.invalidateSize(), 120);
 
       dayMarkerLayer.clearLayers();
@@ -704,7 +758,6 @@
         return;
       }
 
-      // 沒有行程就用目的地中心點
       const tripGeo = await getTripLatLon(trip);
       if (tripGeo) {
         dayMarkerLayer.addLayer(L.marker([tripGeo.lat, tripGeo.lon]).bindPopup(escapeHtml(trip.destination || "目的地")));
@@ -712,6 +765,16 @@
       } else {
         map.setView([23.5, 121], 6);
       }
+    }
+
+    /* ========= 航班：自動帶入時間（把你舊版邏輯貼回來即可） ========= */
+    async function fetchFlightTimeByNumber({ flightNo, date, from, to }) {
+      // 你原本舊版「自動帶入時間」應該是查某個 API 或解析某個來源。
+      // 請把那段程式貼到這裡，最後回傳字串 "HH:MM"（例如 "09:35"）。
+      //
+      // 以下提供「快取優先」結構（已在外層做），這裡只負責查不到時的查詢。
+      // 目前先回傳 null（表示查不到）。
+      return null;
     }
 
     /* ========= DOM ========= */
@@ -730,7 +793,7 @@
     const drawerDeleteTripBtn = document.getElementById("drawerDeleteTripBtn");
     const drawerCloseBtn = document.getElementById("drawerCloseBtn");
 
-    // Modal
+    // Trip modal
     const editTripBtn = document.getElementById("editTripBtn");
     const tripModalBackdrop = document.getElementById("tripModalBackdrop");
     const tripModalCloseBtn = document.getElementById("tripModalCloseBtn");
@@ -742,6 +805,31 @@
     const m_cancelBtn = document.getElementById("m_cancelBtn");
     const m_saveBtn = document.getElementById("m_saveBtn");
     const m_clearTripBtn = document.getElementById("m_clearTripBtn");
+
+    // Itinerary modal
+    const itModalBackdrop = document.getElementById("itModalBackdrop");
+    const itModalTitle = document.getElementById("itModalTitle");
+    const itModalCloseBtn = document.getElementById("itModalCloseBtn");
+    const itModalCancelBtn = document.getElementById("itModalCancelBtn");
+    const itModalSaveBtn = document.getElementById("itModalSaveBtn");
+    const itModalDeleteBtn = document.getElementById("itModalDeleteBtn");
+    const itTime = document.getElementById("itTime");
+    const itTitle = document.getElementById("itTitle");
+    const itNote = document.getElementById("itNote");
+    const acList = document.getElementById("acList");
+
+    // Flight modal
+    const flModalBackdrop = document.getElementById("flModalBackdrop");
+    const flModalCloseBtn = document.getElementById("flModalCloseBtn");
+    const flModalCancelBtn = document.getElementById("flModalCancelBtn");
+    const flModalSaveBtn = document.getElementById("flModalSaveBtn");
+    const flAutoTimeBtn = document.getElementById("flAutoTimeBtn");
+    const flNo = document.getElementById("flNo");
+    const flTime = document.getElementById("flTime");
+    const flFrom = document.getElementById("flFrom");
+    const flTo = document.getElementById("flTo");
+    const flNote = document.getElementById("flNote");
+    const flAutoHint = document.getElementById("flAutoHint");
 
     /* ========= Header ========= */
     function renderHeader() {
@@ -780,6 +868,7 @@
       const currentId = root.activeTripId;
       drawerTripList.innerHTML = "";
       root.trips.forEach(t => {
+        ensureTripShape(t);
         const div = document.createElement("div");
         div.className = "drawer-trip" + (t.id === currentId ? " active" : "");
         div.innerHTML = `
@@ -844,6 +933,7 @@
       trip.expenses = [];
       trip.shopping = [];
       trip.placeCache = {};
+      trip.flightTimeCache = {};
       trip.geo = null;
       regenerateDays(trip);
       saveRoot();
@@ -944,7 +1034,6 @@
             saveRoot();
             onChanged();
 
-            // 切到地圖時：初始化 + 釘選
             if (itineraryInnerTab === "map") {
               const dayId = trip.activeDayId;
               if (dayId && dayId !== "prep") {
@@ -955,6 +1044,286 @@
         });
       }
     }
+
+    /* ========= 行前 ========= */
+    function renderPrepList(trip) {
+      const container = document.getElementById("prepList");
+      if (!container) return;
+      if (!trip.checklist || trip.checklist.length === 0) { container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在上方新增。</div>`; return; }
+
+      container.innerHTML = trip.checklist.map(item => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;">
+          <input type="checkbox" data-prep-id="${item.id}" ${item.done ? "checked" : ""} style="width:18px;height:18px;"/>
+          <div style="flex:1;${item.done ? "text-decoration:line-through;color:#9ca3af;" : ""}">${escapeHtml(item.text)}</div>
+          <button class="btn btn-danger btn-icon" data-prep-del="${item.id}">✕</button>
+        </div>
+      `).join("");
+
+      container.querySelectorAll("[data-prep-id]").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const id = cb.getAttribute("data-prep-id");
+          const target = trip.checklist.find(i => i.id === id);
+          if (target) { target.done = cb.checked; saveRoot(); renderPrepList(trip); }
+        });
+      });
+      container.querySelectorAll("[data-prep-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-prep-del");
+          trip.checklist = trip.checklist.filter(i => i.id !== id);
+          saveRoot();
+          renderPrepList(trip);
+        });
+      });
+    }
+
+    /* ========= Itinerary Modal ========= */
+    function openItineraryModalAdd(trip, dayId) {
+      itModalMode = "add";
+      itModalDayId = dayId;
+      itEditingId = null;
+      selectedPlaceForItinerary = null;
+
+      itModalTitle.textContent = "新增行程";
+      itModalDeleteBtn.style.display = "none";
+      itTime.value = "";
+      itTitle.value = "";
+      itNote.value = "";
+
+      itModalBackdrop.classList.add("show");
+      bindAutocomplete(trip); // 開啟時綁定建議搜尋
+      setTimeout(() => itTitle.focus(), 80);
+    }
+
+    function openItineraryModalEdit(trip, dayId, itemId) {
+      const item = (trip.itinerary[dayId] || []).find(i => i.id === itemId);
+      if (!item) return;
+      itModalMode = "edit";
+      itModalDayId = dayId;
+      itEditingId = itemId;
+      selectedPlaceForItinerary = null;
+
+      itModalTitle.textContent = "編輯行程";
+      itModalDeleteBtn.style.display = "inline-flex";
+      itTime.value = item.time || "";
+      itTitle.value = item.title || "";
+      itNote.value = item.note || "";
+
+      itModalBackdrop.classList.add("show");
+      bindAutocomplete(trip);
+      setTimeout(() => itTitle.focus(), 80);
+    }
+
+    function closeItineraryModal() {
+      itModalBackdrop.classList.remove("show");
+      if (acList) { acList.style.display = "none"; acList.innerHTML = ""; }
+    }
+
+    itModalCloseBtn.addEventListener("click", closeItineraryModal);
+    itModalCancelBtn.addEventListener("click", closeItineraryModal);
+    itModalBackdrop.addEventListener("click", (e) => { if (e.target === itModalBackdrop) closeItineraryModal(); });
+
+    itTime.addEventListener("blur", () => { if (itTime.value) itTime.value = parseTimeString(itTime.value); });
+
+    itModalSaveBtn.addEventListener("click", async () => {
+      const trip = getCurrentTrip();
+      const dayId = itModalDayId;
+      if (!dayId) return;
+
+      const time = parseTimeString(itTime.value);
+      const title = (itTitle.value || "").trim();
+      const note = (itNote.value || "").trim();
+
+      if (!title && !time && !note) { closeItineraryModal(); return; }
+
+      let lat = null, lon = null, displayName = null;
+      if (selectedPlaceForItinerary && selectedPlaceForItinerary.title === title) {
+        lat = selectedPlaceForItinerary.lat; lon = selectedPlaceForItinerary.lon; displayName = selectedPlaceForItinerary.displayName;
+      } else if (trip.placeCache && trip.placeCache[title]) {
+        lat = trip.placeCache[title].lat; lon = trip.placeCache[title].lon; displayName = trip.placeCache[title].displayName;
+      } else if (title) {
+        try {
+          const geo = await geocodePlace(title, trip.destination);
+          if (geo) { lat = geo.lat; lon = geo.lon; displayName = geo.displayName || title; trip.placeCache[title] = { lat, lon, displayName }; }
+        } catch (e) { console.error(e); }
+      }
+
+      if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
+
+      if (itModalMode === "edit" && itEditingId) {
+        const target = trip.itinerary[dayId].find(i => i.id === itEditingId);
+        if (target) {
+          target.time = time;
+          target.title = title || "未命名行程";
+          target.note = note;
+          if (typeof lat === "number" && typeof lon === "number") {
+            target.lat = lat; target.lon = lon; target.displayName = displayName || target.displayName || target.title;
+          }
+        }
+      } else {
+        trip.itinerary[dayId].push({
+          id: generateId("it"),
+          time,
+          title: title || "未命名行程",
+          note,
+          lat: (typeof lat === "number" ? lat : undefined),
+          lon: (typeof lon === "number" ? lon : undefined),
+          displayName: displayName || undefined
+        });
+      }
+
+      saveRoot();
+      closeItineraryModal();
+      renderItineraryView();
+    });
+
+    itModalDeleteBtn.addEventListener("click", () => {
+      const trip = getCurrentTrip();
+      const dayId = itModalDayId;
+      if (!dayId || !itEditingId) return;
+      trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== itEditingId);
+      saveRoot();
+      closeItineraryModal();
+      renderItineraryView();
+    });
+
+    /* ========= Autocomplete（行程彈窗內） ========= */
+    function bindAutocomplete(trip) {
+      selectedPlaceForItinerary = null;
+      const input = itTitle;
+      const listEl = acList;
+      if (!input || !listEl) return;
+
+      const hideList = () => { listEl.style.display = "none"; listEl.innerHTML = ""; };
+      const renderList = (items) => {
+        if (!items || items.length === 0) { hideList(); return; }
+        listEl.innerHTML = items.map(it => {
+          const main = (it.display_name || "").split(",")[0] || it.display_name || "";
+          const sub = it.display_name || "";
+          return `
+            <div class="ac-item" data-lat="${it.lat}" data-lon="${it.lon}"
+                 data-display="${encodeURIComponent(it.display_name || main)}"
+                 data-main="${encodeURIComponent(main)}">
+              <div class="ac-main">${escapeHtml(main)}</div>
+              <div class="ac-sub">${escapeHtml(sub)}</div>
+            </div>
+          `;
+        }).join("");
+        listEl.style.display = "block";
+
+        listEl.querySelectorAll(".ac-item").forEach(row => {
+          row.addEventListener("click", () => {
+            const lat = parseFloat(row.getAttribute("data-lat"));
+            const lon = parseFloat(row.getAttribute("data-lon"));
+            const display = decodeURIComponent(row.getAttribute("data-display") || "");
+            const main = decodeURIComponent(row.getAttribute("data-main") || "");
+
+            input.value = main || display;
+            selectedPlaceForItinerary = { lat, lon, title: (main || display || "").trim(), displayName: display || main };
+
+            if (selectedPlaceForItinerary.title) {
+              trip.placeCache[selectedPlaceForItinerary.title] = { lat, lon, displayName: selectedPlaceForItinerary.displayName };
+              saveRoot();
+            }
+            hideList();
+          });
+        });
+      };
+
+      const doSearch = debounce(async () => {
+        const keyword = (input.value || "").trim();
+        if (!keyword) { hideList(); selectedPlaceForItinerary = null; return; }
+        const hint = (trip.destination || "").trim();
+        const q = hint ? `${keyword} ${hint}` : keyword;
+        try {
+          const data = await nominatimSearch(q, 6);
+          renderList(data || []);
+        } catch (e) { console.error(e); hideList(); }
+      }, 220);
+
+      input.oninput = () => { selectedPlaceForItinerary = null; doSearch(); };
+
+      // 點彈窗內其他地方關閉建議清單
+      itModalBackdrop.addEventListener("click", (e) => {
+        if (e.target === itModalBackdrop) return;
+        if (!listEl.contains(e.target) && e.target !== input) hideList();
+      });
+    }
+
+    /* ========= Flight Modal ========= */
+    function openFlightModal(trip, dayDate) {
+      flModalDayDate = dayDate;
+      flNo.value = "";
+      flTime.value = "";
+      flFrom.value = "";
+      flTo.value = "";
+      flNote.value = "";
+      flModalBackdrop.classList.add("show");
+      setTimeout(() => flNo.focus(), 80);
+    }
+    function closeFlightModal() { flModalBackdrop.classList.remove("show"); }
+
+    flModalCloseBtn.addEventListener("click", closeFlightModal);
+    flModalCancelBtn.addEventListener("click", closeFlightModal);
+    flModalBackdrop.addEventListener("click", (e) => { if (e.target === flModalBackdrop) closeFlightModal(); });
+
+    flTime.addEventListener("blur", () => { if (flTime.value) flTime.value = parseTimeString(flTime.value); });
+
+    flAutoTimeBtn.addEventListener("click", async () => {
+      const trip = getCurrentTrip();
+      const date = flModalDayDate;
+      const flightNo = (flNo.value || "").trim().toUpperCase();
+      const from = (flFrom.value || "").trim().toUpperCase();
+      const to = (flTo.value || "").trim().toUpperCase();
+
+      if (!date) { alert("此日尚未設定日期，無法自動帶入時間。請先到旅程設定輸入出發日期。"); return; }
+      if (!flightNo) { alert("請先輸入班機號。"); return; }
+
+      const cacheKey = `${date}|${flightNo}`;
+      if (trip.flightTimeCache && trip.flightTimeCache[cacheKey]) {
+        flTime.value = trip.flightTimeCache[cacheKey];
+        return;
+      }
+
+      flAutoTimeBtn.disabled = true;
+      flAutoTimeBtn.textContent = "讀取中…";
+      try {
+        const t = await fetchFlightTimeByNumber({ flightNo, date, from, to });
+        if (t && typeof t === "string") {
+          const normalized = parseTimeString(t);
+          flTime.value = normalized;
+          trip.flightTimeCache[cacheKey] = normalized;
+          saveRoot();
+        } else {
+          alert("查不到此班機的時間。請手動輸入，或把你舊版的查詢程式貼回 fetchFlightTimeByNumber()。");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("自動帶入時間失敗，請稍後再試或手動輸入。");
+      } finally {
+        flAutoTimeBtn.disabled = false;
+        flAutoTimeBtn.textContent = "自動帶入";
+      }
+    });
+
+    flModalSaveBtn.addEventListener("click", () => {
+      const trip = getCurrentTrip();
+      const dayDate = flModalDayDate;
+
+      if (!dayDate) { alert("此日尚未設定日期，無法新增航班。請先到旅程設定輸入出發日期。"); return; }
+
+      const flightNo = (flNo.value || "").trim().toUpperCase();
+      const time = parseTimeString((flTime.value || "").trim());
+      const from = (flFrom.value || "").trim().toUpperCase();
+      const to = (flTo.value || "").trim().toUpperCase();
+      const note = (flNote.value || "").trim();
+
+      if (!flightNo && !from && !to && !time && !note) { closeFlightModal(); return; }
+
+      trip.flights.push({ id: generateId("fl"), date: dayDate, flightNo, from, to, time, note });
+      saveRoot();
+      closeFlightModal();
+      renderItineraryView();
+    });
 
     /* ========= Itinerary View ========= */
     function renderItineraryView() {
@@ -1016,12 +1385,11 @@
         return;
       }
 
-      // 共用：天氣
+      // 共用：天氣 + 航班
       const dayInfo = trip.days.find(d => d.id === dayId);
       const dayDate = dayInfo?.date || "";
       const dayFlights = (trip.flights || []).filter(f => (f.date || "") === dayDate);
 
-      // 地圖頁籤：只顯示地圖（行程頁不顯示地圖）
       if (itineraryInnerTab === "map") {
         container.innerHTML = `
           <div>
@@ -1031,25 +1399,60 @@
             <div class="small-label">當日行程地圖（依行程自動釘選）</div>
             <div id="dayMap" class="map-container"></div>
 
-            <div class="empty" style="padding-top:10px;">
-              你可以點上方「行程」頁籤回到新增/編輯行程。
-            </div>
+            <div style="margin-top:12px;">
+              <div class="card-header" style="margin-bottom:6px;">
+                <div class="card-title">當日航班</div>
+                <div style="font-size:11px;color:var(--text-sub);">${dayDate ? formatDateMMDD(dayDate) : ""}</div>
+              </div>
 
-            ${renderFlightsBlock(dayFlights, dayDate)}
+              ${
+                dayFlights.length
+                  ? `<div class="list">
+                      ${dayFlights.map(f => `
+                        <div class="list-item">
+                          <div class="list-main">
+                            <div class="list-meta">${escapeHtml(f.time || "")} ${f.flightNo ? "· " + escapeHtml(f.flightNo) : ""}</div>
+                            <div class="list-title">${escapeHtml((f.from || "???") + " → " + (f.to || "???"))}</div>
+                            ${f.note ? `<div class="list-note">${escapeHtml(f.note)}</div>` : ""}
+                          </div>
+                          <div style="display:flex;gap:4px;">
+                            <button class="btn btn-danger btn-icon" data-del-flight="${f.id}">✕</button>
+                          </div>
+                        </div>
+                      `).join("")}
+                    </div>`
+                  : `<div class="empty" style="padding-top:6px;">本日尚未新增航班。</div>`
+              }
+
+              <div style="text-align:right;margin-top:8px;">
+                <button class="btn btn-primary" id="openFlightModalBtn">＋ 新增航班</button>
+              </div>
+            </div>
           </div>
         `;
 
         updateDayWeather(trip, dayId);
-        // 地圖：初始化/更新
         setTimeout(() => updateDayMap(trip, dayId), 160);
-        bindFlightEvents(trip, dayDate);
+
+        container.querySelectorAll("[data-del-flight]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-del-flight");
+            trip.flights = (trip.flights || []).filter(f => f.id !== id);
+            saveRoot();
+            renderItineraryView();
+          });
+        });
+
+        const addFlBtn = document.getElementById("openFlightModalBtn");
+        addFlBtn?.addEventListener("click", () => openFlightModal(trip, dayDate));
         return;
       }
 
-      // 行程頁籤：表單 + 清單（不顯示地圖）
+      // 行程頁：變簡潔（不顯示輸入欄位），只保留「新增行程」按鈕 + 清單
       const list = (trip.itinerary[dayId] || []).slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
       let listHtml = "";
-      if (list.length === 0) listHtml = `<div class="empty">還沒有安排行程，下方可以新增一筆～</div>`;
+      if (list.length === 0) listHtml = `<div class="empty">還沒有安排行程，點下方「新增行程」開始新增～</div>`;
       else {
         listHtml = `<div class="list">` + list.map(item => `
           <div class="list-item">
@@ -1060,8 +1463,8 @@
             </div>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
               <button class="btn btn-ghost btn-sm" data-open-map="${item.id}">導航</button>
-              <button class="btn btn-ghost btn-sm" data-edit-itinerary="${item.id}">編輯</button>
-              <button class="btn btn-danger btn-icon" data-del-itinerary="${item.id}">✕</button>
+              <button class="btn btn-ghost btn-sm" data-edit-it="${item.id}">編輯</button>
+              <button class="btn btn-danger btn-icon" data-del-it="${item.id}">✕</button>
             </div>
           </div>
         `).join("") + `</div>`;
@@ -1072,207 +1475,64 @@
           <div class="small-label">當日天氣</div>
           <div id="dayWeatherBox" class="weather-box"><div class="weather-loading">讀取天氣中…</div></div>
 
-          <div class="small-label">新增行程項目</div>
-          <div class="row">
-            <div class="col"><input id="itTime" type="time" placeholder="時間（例如 09:00）" /></div>
-            <div class="col ac-wrap">
-              <input id="itTitle" placeholder="行程名稱（地標/地址）" autocomplete="off" />
-              <div id="acList" class="ac-list" style="display:none;"></div>
-            </div>
-          </div>
-          <textarea id="itNote" placeholder="備註（交通方式、門票等，可留白）"></textarea>
-
-          <div style="margin-top:8px; text-align:right;">
-            <button class="btn btn-primary" id="addItineraryBtn">＋ 新增行程</button>
+          <div class="card-header" style="margin-top:4px;">
+            <div class="card-title">當日行程</div>
+            <button class="btn btn-primary" id="openItModalBtn">＋ 新增行程</button>
           </div>
 
           ${listHtml}
-          ${renderFlightsBlock(dayFlights, dayDate)}
+
+          <div style="margin-top:12px;">
+            <div class="card-header" style="margin-bottom:6px;">
+              <div class="card-title">當日航班</div>
+              <button class="btn btn-primary" id="openFlightModalBtn">＋ 新增航班</button>
+            </div>
+
+            ${
+              dayFlights.length
+                ? `<div class="list">
+                    ${dayFlights.map(f => `
+                      <div class="list-item">
+                        <div class="list-main">
+                          <div class="list-meta">${escapeHtml(f.time || "")} ${f.flightNo ? "· " + escapeHtml(f.flightNo) : ""}</div>
+                          <div class="list-title">${escapeHtml((f.from || "???") + " → " + (f.to || "???"))}</div>
+                          ${f.note ? `<div class="list-note">${escapeHtml(f.note)}</div>` : ""}
+                        </div>
+                        <div style="display:flex;gap:4px;">
+                          <button class="btn btn-danger btn-icon" data-del-flight="${f.id}">✕</button>
+                        </div>
+                      </div>
+                    `).join("")}
+                  </div>`
+                : `<div class="empty" style="padding-top:6px;">本日尚未新增航班。</div>`
+            }
+          </div>
         </div>
       `;
 
       updateDayWeather(trip, dayId);
-      bindAutocomplete(trip);
-      bindItineraryForm(trip, dayId);
-      bindItineraryListActions(trip, dayId);
-      bindFlightEvents(trip, dayDate);
-    }
 
-    function renderFlightsBlock(dayFlights, dayDate) {
-      return `
-        <div style="margin-top:12px;">
-          <div class="card-header" style="margin-bottom:6px;">
-            <div class="card-title">當日航班</div>
-            <div style="font-size:11px;color:var(--text-sub);">${dayDate ? formatDateMMDD(dayDate) : ""}</div>
-          </div>
+      // 新增行程：開彈窗
+      document.getElementById("openItModalBtn")?.addEventListener("click", () => openItineraryModalAdd(trip, dayId));
 
-          ${
-            dayFlights.length
-              ? `<div class="list">
-                  ${dayFlights.map(f => `
-                    <div class="list-item">
-                      <div class="list-main">
-                        <div class="list-meta">${escapeHtml(f.time || "")} ${f.flightNo ? "· " + escapeHtml(f.flightNo) : ""}</div>
-                        <div class="list-title">${escapeHtml((f.from || "???") + " → " + (f.to || "???"))}</div>
-                        ${f.note ? `<div class="list-note">${escapeHtml(f.note)}</div>` : ""}
-                      </div>
-                      <div style="display:flex;gap:4px;">
-                        <button class="btn btn-danger btn-icon" data-del-flight="${f.id}">✕</button>
-                      </div>
-                    </div>
-                  `).join("")}
-                </div>`
-              : `<div class="empty" style="padding-top:6px;">本日尚未新增航班。</div>`
-          }
+      // 航班：開彈窗
+      document.getElementById("openFlightModalBtn")?.addEventListener("click", () => openFlightModal(trip, dayDate));
 
-          <div style="margin-top:10px;">
-            <div class="small-label">新增航班（會自動存到本日）</div>
-            <div class="row">
-              <div class="col"><input id="flNo" placeholder="班機號（例如：BR87）" /></div>
-              <div class="col"><input id="flTime" type="time" placeholder="起飛時間" /></div>
-            </div>
-            <div class="row">
-              <div class="col"><input id="flFrom" placeholder="出發地（例如：TPE）" /></div>
-              <div class="col"><input id="flTo" placeholder="抵達地（例如：HKG）" /></div>
-            </div>
-            <input id="flNote" placeholder="備註（去程／回程…）" />
-            <div style="margin-top:8px; text-align:right;">
-              <button class="btn btn-primary" id="addFlightBtn">＋ 新增航班</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function bindAutocomplete(trip) {
-      selectedPlaceForItinerary = null;
-      const input = document.getElementById("itTitle");
-      const listEl = document.getElementById("acList");
-      if (!input || !listEl) return;
-
-      const hideList = () => { listEl.style.display = "none"; listEl.innerHTML = ""; };
-      const renderList = (items) => {
-        if (!items || items.length === 0) { hideList(); return; }
-        listEl.innerHTML = items.map(it => {
-          const main = (it.display_name || "").split(",")[0] || it.display_name || "";
-          const sub = it.display_name || "";
-          return `
-            <div class="ac-item" data-lat="${it.lat}" data-lon="${it.lon}"
-                 data-display="${encodeURIComponent(it.display_name || main)}"
-                 data-main="${encodeURIComponent(main)}">
-              <div class="ac-main">${escapeHtml(main)}</div>
-              <div class="ac-sub">${escapeHtml(sub)}</div>
-            </div>
-          `;
-        }).join("");
-        listEl.style.display = "block";
-
-        listEl.querySelectorAll(".ac-item").forEach(row => {
-          row.addEventListener("click", () => {
-            const lat = parseFloat(row.getAttribute("data-lat"));
-            const lon = parseFloat(row.getAttribute("data-lon"));
-            const display = decodeURIComponent(row.getAttribute("data-display") || "");
-            const main = decodeURIComponent(row.getAttribute("data-main") || "");
-
-            input.value = main || display;
-            selectedPlaceForItinerary = { lat, lon, title: (main || display || "").trim(), displayName: display || main };
-
-            if (selectedPlaceForItinerary.title) {
-              trip.placeCache[selectedPlaceForItinerary.title] = { lat, lon, displayName: selectedPlaceForItinerary.displayName };
-              saveRoot();
-            }
-            hideList();
-          });
-        });
-      };
-
-      const doSearch = debounce(async () => {
-        const keyword = (input.value || "").trim();
-        if (!keyword) { hideList(); selectedPlaceForItinerary = null; return; }
-        const hint = (trip.destination || "").trim();
-        const q = hint ? `${keyword} ${hint}` : keyword;
-        try {
-          const data = await nominatimSearch(q, 6);
-          renderList(data || []);
-        } catch (e) { console.error(e); hideList(); }
-      }, 220);
-
-      input.addEventListener("input", () => { selectedPlaceForItinerary = null; doSearch(); });
-      document.addEventListener("click", (e) => { if (!listEl.contains(e.target) && e.target !== input) hideList(); });
-    }
-
-    function bindItineraryForm(trip, dayId) {
-      const timeInput = document.getElementById("itTime");
-      const titleInput = document.getElementById("itTitle");
-      const noteInput = document.getElementById("itNote");
-      const addBtn = document.getElementById("addItineraryBtn");
-
-      timeInput.addEventListener("blur", () => { if (timeInput.value) timeInput.value = parseTimeString(timeInput.value); });
-
-      addBtn.onclick = async () => {
-        const time = parseTimeString(timeInput.value);
-        const title = (titleInput.value || "").trim();
-        const note = (noteInput.value || "").trim();
-        if (!time && !title && !note) return;
-
-        let lat = null, lon = null, displayName = null;
-        if (selectedPlaceForItinerary && selectedPlaceForItinerary.title === title) {
-          lat = selectedPlaceForItinerary.lat; lon = selectedPlaceForItinerary.lon; displayName = selectedPlaceForItinerary.displayName;
-        } else if (trip.placeCache && trip.placeCache[title]) {
-          lat = trip.placeCache[title].lat; lon = trip.placeCache[title].lon; displayName = trip.placeCache[title].displayName;
-        } else if (title) {
-          try {
-            const geo = await geocodePlace(title, trip.destination);
-            if (geo) { lat = geo.lat; lon = geo.lon; displayName = geo.displayName || title; trip.placeCache[title] = { lat, lon, displayName }; }
-          } catch (e) { console.error(e); }
-        }
-
-        if (editingItineraryId) {
-          const target = (trip.itinerary[dayId] || []).find(i => i.id === editingItineraryId);
-          if (target) {
-            target.time = time;
-            target.title = title || "未命名行程";
-            target.note = note;
-            if (typeof lat === "number" && typeof lon === "number") {
-              target.lat = lat; target.lon = lon; target.displayName = displayName || target.displayName || target.title;
-            }
-          }
-        } else {
-          if (!trip.itinerary[dayId]) trip.itinerary[dayId] = [];
-          trip.itinerary[dayId].push({
-            id: generateId("it"),
-            time,
-            title: title || "未命名行程",
-            note,
-            lat: (typeof lat === "number" ? lat : undefined),
-            lon: (typeof lon === "number" ? lon : undefined),
-            displayName: displayName || undefined
-          });
-        }
-
-        editingItineraryId = null;
-        addBtn.textContent = "＋ 新增行程";
-        timeInput.value = "";
-        titleInput.value = "";
-        noteInput.value = "";
-        selectedPlaceForItinerary = null;
-
-        saveRoot();
-        renderDayContent(trip);
-      };
-    }
-
-    function bindItineraryListActions(trip, dayId) {
-      const container = document.getElementById("dayContent");
-      container.querySelectorAll("[data-del-itinerary]").forEach(btn => {
+      // 行程清單操作
+      container.querySelectorAll("[data-del-it]").forEach(btn => {
         btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-del-itinerary");
+          const id = btn.getAttribute("data-del-it");
           trip.itinerary[dayId] = (trip.itinerary[dayId] || []).filter(i => i.id !== id);
           saveRoot();
-          renderDayContent(trip);
+          renderItineraryView();
         });
       });
-
+      container.querySelectorAll("[data-edit-it]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-edit-it");
+          openItineraryModalEdit(trip, dayId, id);
+        });
+      });
       container.querySelectorAll("[data-open-map]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-open-map");
@@ -1282,86 +1542,19 @@
         });
       });
 
-      container.querySelectorAll("[data-edit-itinerary]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-edit-itinerary");
-          const item = (trip.itinerary[dayId] || []).find(i => i.id === id);
-          if (!item) return;
-          document.getElementById("itTime").value = item.time || "";
-          document.getElementById("itTitle").value = item.title || "";
-          document.getElementById("itNote").value = item.note || "";
-          editingItineraryId = id;
-          document.getElementById("addItineraryBtn").textContent = "儲存行程";
-        });
-      });
-    }
-
-    function bindFlightEvents(trip, dayDate) {
-      const container = document.getElementById("dayContent");
+      // 航班刪除
       container.querySelectorAll("[data-del-flight]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-flight");
           trip.flights = (trip.flights || []).filter(f => f.id !== id);
           saveRoot();
-          renderDayContent(trip);
-        });
-      });
-
-      const addBtn = document.getElementById("addFlightBtn");
-      if (!addBtn) return;
-
-      const flTime = document.getElementById("flTime");
-      flTime?.addEventListener("blur", () => { if (flTime.value) flTime.value = parseTimeString(flTime.value); });
-
-      addBtn.addEventListener("click", () => {
-        const flightNo = (document.getElementById("flNo").value || "").trim();
-        const time = parseTimeString((document.getElementById("flTime").value || "").trim());
-        const from = (document.getElementById("flFrom").value || "").trim();
-        const to = (document.getElementById("flTo").value || "").trim();
-        const note = (document.getElementById("flNote").value || "").trim();
-
-        if (!flightNo && !from && !to && !time && !note) return;
-        if (!dayDate) { alert("此日尚未設定日期，無法新增航班。請先到旅程設定輸入出發日期。"); return; }
-
-        trip.flights.push({ id: generateId("fl"), date: dayDate, flightNo, from, to, time, note });
-        saveRoot();
-        renderDayContent(trip);
-      });
-    }
-
-    function renderPrepList(trip) {
-      const container = document.getElementById("prepList");
-      if (!container) return;
-      if (!trip.checklist || trip.checklist.length === 0) { container.innerHTML = `<div class="empty">目前沒有行前待辦，可以在上方新增。</div>`; return; }
-
-      container.innerHTML = trip.checklist.map(item => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;">
-          <input type="checkbox" data-prep-id="${item.id}" ${item.done ? "checked" : ""} style="width:18px;height:18px;"/>
-          <div style="flex:1;${item.done ? "text-decoration:line-through;color:#9ca3af;" : ""}">${escapeHtml(item.text)}</div>
-          <button class="btn btn-danger btn-icon" data-prep-del="${item.id}">✕</button>
-        </div>
-      `).join("");
-
-      container.querySelectorAll("[data-prep-id]").forEach(cb => {
-        cb.addEventListener("change", () => {
-          const id = cb.getAttribute("data-prep-id");
-          const target = trip.checklist.find(i => i.id === id);
-          if (target) { target.done = cb.checked; saveRoot(); renderPrepList(trip); }
-        });
-      });
-      container.querySelectorAll("[data-prep-del]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-prep-del");
-          trip.checklist = trip.checklist.filter(i => i.id !== id);
-          saveRoot();
-          renderPrepList(trip);
+          renderItineraryView();
         });
       });
     }
 
     /* ========= 記帳 / 購物（簡版） ========= */
     function renderExpensesView() {
-      const trip = getCurrentTrip();
       mainView.innerHTML = `
         <section class="card">
           <div class="card-header"><div class="card-title">記帳</div></div>
@@ -1370,7 +1563,6 @@
       `;
     }
     function renderShoppingView() {
-      const trip = getCurrentTrip();
       mainView.innerHTML = `
         <section class="card">
           <div class="card-header"><div class="card-title">購物</div></div>
@@ -1395,7 +1587,7 @@
       });
     });
 
-    /* ========= Init ========= */
+    /* ========= 初始化 ========= */
     (function init() {
       const trip = getCurrentTrip();
       if (!trip.days || trip.days.length === 0) regenerateDays(trip);
@@ -1403,6 +1595,16 @@
       renderDrawerTrips();
       renderCurrentMainView();
     })();
+  </script>
+
+  <script>
+    /* ========= Drawer events（放最後避免 hoist 混亂） ========= */
+    function openDrawer() { tripDrawer.classList.add("open"); drawerBackdrop.classList.add("show"); renderDrawerTrips(); }
+    function closeDrawer() { tripDrawer.classList.remove("open"); drawerBackdrop.classList.remove("show"); }
+
+    menuButton.addEventListener("click", openDrawer);
+    drawerBackdrop.addEventListener("click", closeDrawer);
+    drawerCloseBtn.addEventListener("click", closeDrawer);
   </script>
 </body>
 </html>
