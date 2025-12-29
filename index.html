@@ -598,9 +598,35 @@
           <div class="pill"><span>📍</span><span id="destPillText">未設定目的地</span></div>
         </div>
 
+        <!-- ✅ 事前準備（加回來） -->
+        <div style="margin-top:10px;">
+          <div class="cardHeader" style="margin-bottom:8px;">
+            <div class="cardTitle">事前準備</div>
+            <button class="btn btnGhost btnIcon" id="prepToggleBtn" aria-label="展開/收合">▾</button>
+          </div>
+
+          <div id="prepPanel">
+            <div class="row" style="margin-bottom:8px;">
+              <div class="col">
+                <input id="prepInput" placeholder="新增準備事項，例如：換匯、SIM卡、保險…" />
+              </div>
+              <div style="display:flex;align-items:center;">
+                <button class="btn btnPrimary" id="prepAddBtn">＋</button>
+              </div>
+            </div>
+
+            <div id="prepList"></div>
+
+            <div style="margin-top:6px;font-size:11px;color:var(--sub);">
+              這裡是整趟旅程的準備清單（不屬於某一天），會自動保存。
+            </div>
+          </div>
+        </div>
+
+        <!-- Day Chips -->
         <div class="dayChips" id="dayChips"></div>
 
-        <!-- 行程 / 地圖頁籤 -->
+        <!-- 行程 / 地圖頁籤（只在底部 tab = 行程 時顯示） -->
         <div class="segTabs" id="itinerarySegTabs" style="display:none;">
           <div class="segTab active" data-seg="schedule">行程</div>
           <div class="segTab" data-seg="map">地圖</div>
@@ -980,11 +1006,13 @@
         days: [],
         activeDayId: null,
 
+        // ✅ 事前準備（整趟旅程）
+        prep: [],
+
         itinerary: {},
         flights: [],
         expenses: [],
         shopping: [],
-
         exchangeRate: { base:"JPY", target:"TWD", rate:null, updatedAt:"" },
 
         geo: null,
@@ -1000,6 +1028,9 @@
       if(!trip.exchangeRate) trip.exchangeRate = { base: (trip.currency||"JPY"), target:"TWD", rate:null, updatedAt:"" };
       if(!trip.placeCache) trip.placeCache = {};
       if(!trip.days) trip.days = [];
+
+      // ✅ 舊資料補齊
+      if(!trip.prep) trip.prep = [];
     }
 
     function regenerateDays(trip){
@@ -1113,7 +1144,94 @@
     const flModalSave = document.getElementById("flModalSave");
 
     /********************
-     * 7) Header / Drawer
+     * ✅ 7) 事前準備（加回來）
+     ********************/
+    let prepCollapsed = false;
+
+    function renderPrepSection(){
+      const trip = getCurrentTrip();
+
+      const panel = document.getElementById("prepPanel");
+      const listEl = document.getElementById("prepList");
+      const toggleBtn = document.getElementById("prepToggleBtn");
+      const inputEl = document.getElementById("prepInput");
+      const addBtn = document.getElementById("prepAddBtn");
+
+      if(!panel || !listEl || !toggleBtn || !inputEl || !addBtn) return;
+
+      panel.style.display = prepCollapsed ? "none" : "block";
+      toggleBtn.textContent = prepCollapsed ? "▸" : "▾";
+
+      toggleBtn.onclick = ()=>{
+        prepCollapsed = !prepCollapsed;
+        renderPrepSection();
+      };
+
+      if(!Array.isArray(trip.prep)) trip.prep = [];
+
+      if(trip.prep.length === 0){
+        listEl.innerHTML = `<div class="empty" style="text-align:left;">尚未新增事前準備。</div>`;
+      }else{
+        listEl.innerHTML = `<div class="list">` + trip.prep.map(item=>{
+          const checked = item.done ? "checked" : "";
+          return `
+            <div class="listItem" style="align-items:center;">
+              <div class="listMain" style="display:flex;gap:10px;align-items:center;">
+                <input type="checkbox" data-prep-check="${item.id}" ${checked} style="width:18px;height:18px;" />
+                <div style="min-width:0;">
+                  <div class="itemTitle" style="margin:0;${item.done ? "text-decoration:line-through;opacity:.6;" : ""}">
+                    ${safeText(item.text || "")}
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btnDanger btnIcon" data-prep-del="${item.id}">✕</button>
+              </div>
+            </div>
+          `;
+        }).join("") + `</div>`;
+
+        listEl.querySelectorAll("[data-prep-check]").forEach(cb=>{
+          cb.addEventListener("change", ()=>{
+            const id = cb.getAttribute("data-prep-check");
+            const target = trip.prep.find(x=>x.id===id);
+            if(target){
+              target.done = cb.checked;
+              saveRoot();
+              renderPrepSection();
+            }
+          });
+        });
+
+        listEl.querySelectorAll("[data-prep-del]").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const id = btn.getAttribute("data-prep-del");
+            trip.prep = trip.prep.filter(x=>x.id !== id);
+            saveRoot();
+            renderPrepSection();
+          });
+        });
+      }
+
+      addBtn.onclick = ()=>{
+        const text = (inputEl.value || "").trim();
+        if(!text) return;
+        trip.prep.push({ id: generateId("prep"), text, done:false });
+        inputEl.value = "";
+        saveRoot();
+        renderPrepSection();
+      };
+
+      inputEl.onkeydown = (e)=>{
+        if(e.key === "Enter"){
+          e.preventDefault();
+          addBtn.click();
+        }
+      };
+    }
+
+    /********************
+     * 8) Header / Drawer
      ********************/
     function renderHeader(){
       const trip = getCurrentTrip();
@@ -1201,7 +1319,7 @@
     });
 
     /********************
-     * 8) 旅程設定 Modal
+     * 9) 旅程設定 Modal
      ********************/
     function openTripModal(){
       const trip = getCurrentTrip();
@@ -1265,6 +1383,7 @@
         trip.shopping = [];
         trip.placeCache = {};
         trip.geo = null;
+        trip.prep = []; // ✅ 清空也包含事前準備
         regenerateDays(trip);
         saveRoot();
         renderCurrentMainView();
@@ -1351,13 +1470,14 @@
     });
 
     /********************
-     * 9) Day Chips
+     * 10) Day Chips（固定顯示）
      ********************/
     function renderDayChips(){
       const trip = getCurrentTrip();
 
       if(!trip.days?.length){
         dayChipsEl.innerHTML = `<div class="empty" style="padding:4px 0;">請先設定旅程日期與天數</div>`;
+        renderPrepSection(); // ✅ 仍然更新事前準備
         return;
       }
 
@@ -1383,10 +1503,13 @@
           renderCurrentMainView(true);
         });
       });
+
+      // ✅ 每次重繪 day chips 也同步重繪事前準備
+      renderPrepSection();
     }
 
     /********************
-     * 10) 行程/地圖：Leaflet
+     * 11) 行程/地圖：Leaflet
      ********************/
     let itinerarySubTab = "schedule";
     let leafletMap = null;
@@ -1486,7 +1609,7 @@
     }
 
     /********************
-     * 11) 行程 Modal
+     * 12) 行程 Modal
      ********************/
     let editingItId = null;
 
@@ -1598,7 +1721,7 @@
     });
 
     /********************
-     * 12) 航班 Modal
+     * 13) 航班 Modal
      ********************/
     let editingFlightId = null;
 
@@ -1739,7 +1862,7 @@
     });
 
     /********************
-     * 13) 底部 Tab
+     * 14) 底部 Tab
      ********************/
     let currentTab = "itinerary";
 
@@ -1750,9 +1873,7 @@
         if(t === currentTab) return;
         currentTab = t;
         bottomTabs.forEach(x=>x.classList.toggle("active", x===el));
-
         itinerarySegTabs.style.display = (currentTab === "itinerary") ? "flex" : "none";
-
         renderCurrentMainView(true);
       });
     });
@@ -1768,7 +1889,7 @@
     });
 
     /********************
-     * 14) View：行程（schedule / map）
+     * 15) View：行程（schedule / map）
      ********************/
     function renderItinerarySchedule(trip){
       const dayId = trip.activeDayId;
@@ -1942,7 +2063,7 @@
     }
 
     /********************
-     * 15) View：航班
+     * 16) View：航班
      ********************/
     function renderFlightsView(trip){
       let html = `
@@ -2022,8 +2143,7 @@
     }
 
     /********************
-     * 16) View：記帳（依每天記錄：用 dayId 篩選）
-     * ✅ 已改：上方合計卡同時顯示「總支出 / 現金 / 信用卡 / 其他」各自金額
+     * 17) View：記帳（你的版本保持不動）
      ********************/
     let expenseFilter = "all"; // all | cash | card
 
@@ -2032,7 +2152,6 @@
       const dayId = trip.activeDayId;
       const dayDate = trip.days.find(d=>d.id===dayId)?.date || "";
 
-      // 只顯示當日
       let dayList = trip.expenses.filter(e => e.dayId === dayId);
       if(expenseFilter === "cash") dayList = dayList.filter(e=>e.method==="cash");
       if(expenseFilter === "card") dayList = dayList.filter(e=>e.method==="card");
@@ -2042,28 +2161,13 @@
         ? null
         : (ex && typeof ex.rate === "number" && ex.rate > 0 && ex.base === cur && ex.target === "TWD" ? ex.rate : null);
 
-      // ✅ 統一計算「約 TWD」的方式
-      function calcTwd(e){
-        if(typeof e.approxTwd === "number" && !isNaN(e.approxTwd)) return e.approxTwd;
-        if(cur === "TWD") return Number(e.amount)||0;
-        if(usableRate) return (Number(e.amount)||0) * usableRate;
-        return 0;
-      }
-
-      // ✅ 上方要顯示：總支出 / 現金 / 信用卡 / 其他（皆以「當日全部支出」做基礎）
-      const allDay = trip.expenses.filter(e => e.dayId === dayId);
-
-      const sumAllCur   = allDay.reduce((s,e)=> s + (Number(e.amount)||0), 0);
-      const sumAllTwd   = allDay.reduce((s,e)=> s + calcTwd(e), 0);
-
-      const sumCashCur  = allDay.filter(e=>e.method==="cash").reduce((s,e)=> s + (Number(e.amount)||0), 0);
-      const sumCashTwd  = allDay.filter(e=>e.method==="cash").reduce((s,e)=> s + calcTwd(e), 0);
-
-      const sumCardCur  = allDay.filter(e=>e.method==="card").reduce((s,e)=> s + (Number(e.amount)||0), 0);
-      const sumCardTwd  = allDay.filter(e=>e.method==="card").reduce((s,e)=> s + calcTwd(e), 0);
-
-      const sumOtherCur = allDay.filter(e=>e.method==="other").reduce((s,e)=> s + (Number(e.amount)||0), 0);
-      const sumOtherTwd = allDay.filter(e=>e.method==="other").reduce((s,e)=> s + calcTwd(e), 0);
+      const sumCur = dayList.reduce((s,e)=> s + (Number(e.amount)||0), 0);
+      const sumTwd = dayList.reduce((s,e)=>{
+        if(typeof e.approxTwd === "number" && !isNaN(e.approxTwd)) return s + e.approxTwd;
+        if(cur === "TWD") return s + (Number(e.amount)||0);
+        if(usableRate) return s + (Number(e.amount)||0) * usableRate;
+        return s;
+      }, 0);
 
       mainView.innerHTML = `
         <section class="card">
@@ -2088,32 +2192,12 @@
 
           <div style="margin-top:6px;font-size:11px;color:var(--sub);" id="expRateHint"></div>
 
-          <!-- ✅ 合計卡：同時顯示總支出 / 現金 / 信用卡 / 其他 -->
-          <div style="margin-top:12px;padding:12px 12px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;">
-            <div style="opacity:.9;font-size:12px;">總支出（${safeText(cur)}）</div>
-
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:6px;">
-              <div style="font-size:22px;font-weight:900;line-height:1.1;">${Math.round(sumAllCur)}</div>
-              <div style="opacity:.9;font-size:12px;">約 TWD ${Math.round(sumAllTwd)}</div>
-            </div>
-
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);display:flex;flex-direction:column;gap:6px;font-size:12px;">
-              <div style="display:flex;justify-content:space-between;">
-                <div style="opacity:.9;">現金</div>
-                <div><strong>${safeText(cur)} ${Math.round(sumCashCur)}</strong> <span style="opacity:.9;">（TWD ${Math.round(sumCashTwd)}）</span></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;">
-                <div style="opacity:.9;">信用卡</div>
-                <div><strong>${safeText(cur)} ${Math.round(sumCardCur)}</strong> <span style="opacity:.9;">（TWD ${Math.round(sumCardTwd)}）</span></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;">
-                <div style="opacity:.9;">其他</div>
-                <div><strong>${safeText(cur)} ${Math.round(sumOtherCur)}</strong> <span style="opacity:.9;">（TWD ${Math.round(sumOtherTwd)}）</span></div>
-              </div>
-            </div>
+          <div style="margin-top:12px;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;">
+            <div style="opacity:.9;font-size:12px;">當日合計（${safeText(cur)}）</div>
+            <div style="font-size:28px;font-weight:900;line-height:1.1;">${Math.round(sumCur)}</div>
+            <div style="opacity:.9;font-size:12px;margin-top:2px;">約 TWD ${Math.round(sumTwd)}</div>
           </div>
 
-          <!-- ✅ 篩選（只影響下面清單顯示，不影響上方分項統計） -->
           <div class="segTabs" style="margin-top:10px;">
             <div class="segTab ${expenseFilter==="all"?"active":""}" data-expf="all">全部</div>
             <div class="segTab ${expenseFilter==="cash"?"active":""}" data-expf="cash">現金</div>
@@ -2172,7 +2256,6 @@
         </section>
       `;
 
-      // 匯率顯示
       const rateInput = document.getElementById("expRateInput");
       const hint = document.getElementById("expRateHint");
 
@@ -2264,7 +2347,7 @@
           .map(e=>{
             const approx = (typeof e.approxTwd === "number" && !isNaN(e.approxTwd))
               ? `約 TWD ${Math.round(e.approxTwd)}`
-              : (cur==="TWD" ? "" : (usableRate ? `約 TWD ${Math.round((Number(e.amount)||0)*usableRate)}` : ""));
+              : (cur==="TWD" ? "" : (usableRate ? `約 TWD ${Math.round(e.amount*usableRate)}` : ""));
             return `
               <div class="listItem">
                 <div class="listMain">
@@ -2272,7 +2355,7 @@
                   <div class="itemTitle">
                     ${safeText(e.category || "未分類")}
                     <span class="badge">${safeText(labelOf(e.method))}</span>
-                    <span class="badge">${safeText(cur)} ${Math.round(Number(e.amount)||0)}</span>
+                    <span class="badge">${safeText(cur)} ${Math.round(e.amount)}</span>
                     ${approx ? `<span class="badge">${safeText(approx)}</span>` : ""}
                   </div>
                   ${e.note ? `<div class="note">${safeText(e.note)}</div>` : ""}
@@ -2296,7 +2379,7 @@
     }
 
     /********************
-     * 17) View：購物
+     * 18) View：購物
      ********************/
     function renderShoppingView(trip){
       const cur = (trip.currency || "JPY").toUpperCase();
@@ -2406,7 +2489,7 @@
     }
 
     /********************
-     * 18) 主切換：renderCurrentMainView
+     * 19) 主切換：renderCurrentMainView
      ********************/
     function renderCurrentMainView(keepScroll){
       const trip = getCurrentTrip();
@@ -2431,13 +2514,16 @@
         renderShoppingView(trip);
       }
 
+      // ✅ 任何主畫面更新後，也同步確保事前準備顯示正確（避免切旅程後看舊內容）
+      renderPrepSection();
+
       if(!keepScroll){
         window.scrollTo({ top: 0, behavior: "auto" });
       }
     }
 
     /********************
-     * 19) 初始化
+     * 20) 初始化
      ********************/
     (function init(){
       const trip = getCurrentTrip();
