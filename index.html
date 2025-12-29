@@ -197,14 +197,14 @@
     .btnDanger{ background:#fee2e2; color:#b91c1c; }
 
     .btnIcon{
-      width:36px;
-      height:36px;
+      width:32px;
+      height:32px;
       padding:0;
       border-radius:999px;
       justify-content:center;
-      font-weight:900;
     }
 
+    /* ===== 固定的「每日行程」上方欄位 ===== */
     .stickyWrap{
       position: sticky;
       top: calc(0px + var(--topSafe));
@@ -249,24 +249,24 @@
       -webkit-overflow-scrolling: touch;
     }
     .chip{
-      min-width:86px;
-      padding:10px 10px;
-      border-radius:18px;
+      min-width:78px;
+      padding:8px 10px;
+      border-radius:16px;
       background:#eff6ff;
       color:#1d4ed8;
       font-size:11px;
       text-align:center;
       cursor:pointer;
       flex:0 0 auto;
-      line-height:1.15;
     }
     .chip strong{ display:block; font-size:13px; margin-bottom:2px; }
-    .chip .chipSub{ display:block; opacity:.95; }
     .chip.active{
       background:#1d4ed8;
       color:#eff6ff;
     }
+    .chip.prepChip{ min-width:86px; }
 
+    /* 行程/地圖 分頁 */
     .segTabs{
       display:flex;
       background:#f3f4f6;
@@ -290,6 +290,7 @@
       color:#f9fafb;
     }
 
+    /* 列表 */
     .list{ margin-top:8px; }
     .listItem{
       background:#f9fafb;
@@ -324,6 +325,7 @@
       padding: 12px 4px;
     }
 
+    /* 地圖容器 */
     .mapContainer{
       width:100%;
       height: 300px;
@@ -332,6 +334,7 @@
       background:#e5e7eb;
     }
 
+    /* Autocomplete */
     .autocompleteWrap{ position:relative; }
     .autocompleteList{
       position:absolute;
@@ -357,6 +360,7 @@
     .acMain{ display:block; font-size:13px; font-weight:600; }
     .acSub{ display:block; font-size:11px; color:var(--sub); margin-top:3px; }
 
+    /* 天氣 */
     .weatherBox{
       width:100%;
       border-radius:16px;
@@ -374,6 +378,7 @@
     .wSub{ font-size:11px; color:var(--sub); margin-top:2px; }
     .wLoading{ font-size:12px; color:var(--sub); }
 
+    /* 航班卡 */
     .flightCard{
       border-radius:22px;
       padding:12px 14px;
@@ -401,6 +406,131 @@
       cursor:pointer;
     }
 
+    /* ===== 記帳：圖二樣式（總支出 + 現金/信用卡拆分） ===== */
+    .expenseSummaryCard{
+      border-radius:22px;
+      padding:14px 14px;
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color:#f9fafb;
+      box-shadow: 0 14px 32px rgba(15,23,42,.25);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .expenseSumTop{
+      text-align:center;
+      font-size:12px;
+      opacity:.92;
+      letter-spacing:.2px;
+    }
+    .expenseSumMain{
+      text-align:center;
+      font-size:34px;
+      font-weight:900;
+      line-height:1.05;
+      margin-top:6px;
+    }
+    .expenseSumSub{
+      text-align:center;
+      font-size:12px;
+      opacity:.9;
+      margin-top:4px;
+    }
+    .expenseSplit{
+      display:flex;
+      margin-top:12px;
+      border-top: 1px solid rgba(255,255,255,.22);
+      padding-top:12px;
+    }
+    .expenseCol{
+      flex:1;
+      text-align:center;
+      padding: 0 8px;
+    }
+    .expenseColTitle{
+      font-size:12px;
+      opacity:.92;
+      margin-bottom:6px;
+    }
+    .expenseColVal{
+      font-size:22px;
+      font-weight:900;
+      line-height:1.05;
+    }
+    .expenseColSub{
+      font-size:12px;
+      opacity:.88;
+      margin-top:4px;
+    }
+    .expenseDivider{
+      width:1px;
+      background: rgba(255,255,255,.28);
+      margin: 0 6px;
+      border-radius:1px;
+    }
+
+    /* 行前待辦 */
+    .prepAddRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .prepAddRow input{
+      height:44px;
+      border-radius:999px;
+      background:#f9fafb;
+    }
+    .prepAddBtn{
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      border:none;
+      background: var(--primary);
+      color:#fff;
+      font-size:22px;
+      cursor:pointer;
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 10px 22px rgba(37,99,235,.25);
+    }
+    .prepAddBtn:active{ transform:scale(.98); }
+    .todoItem{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:10px 10px;
+      border-radius:16px;
+      background:#f9fafb;
+      margin-bottom:8px;
+    }
+    .todoCheck{
+      width:22px;height:22px;border-radius:8px;
+      border:1px solid #d1d5db;background:#fff;
+      display:inline-flex;align-items:center;justify-content:center;
+      cursor:pointer; flex:0 0 auto;
+      margin-top:2px;
+    }
+    .todoCheck.done{
+      background:#111827;
+      border-color:#111827;
+      color:#fff;
+    }
+    .todoText{
+      flex:1; min-width:0;
+      font-size:13px; font-weight:700;
+      word-break:break-word;
+    }
+    .todoText.done{ text-decoration: line-through; color:#6b7280; font-weight:600; }
+    .todoDel{
+      width:34px;height:34px;border-radius:999px;
+      border:none;background:#fee2e2;color:#b91c1c;
+      cursor:pointer; flex:0 0 auto;
+      display:flex;align-items:center;justify-content:center;
+    }
+
+    /* ===== 底部導航 ===== */
     .bottomNav{
       position:fixed;
       left:0; right:0; bottom:0;
@@ -432,6 +562,7 @@
     .bottomTab span{ display:block; font-size:16px; margin-bottom:2px; }
     .bottomTab.active{ background:#111827; color:#f9fafb; }
 
+    /* Modal */
     .modalBackdrop{
       position:fixed;
       inset:0;
@@ -481,6 +612,7 @@
       backdrop-filter: blur(10px);
     }
 
+    /* Drawer */
     .drawerBackdrop{
       position:fixed;
       inset:0;
@@ -530,6 +662,7 @@
     .drawerTripName{ font-weight:800; font-size:13px; }
     .drawerTripSub{ font-size:11px; color:var(--sub); margin-top:2px; }
 
+    /* Leaflet z-index 修正 */
     .leaflet-control-container{ z-index: 2000; }
     .leaflet-pane{ z-index: 1000; }
 
@@ -589,10 +722,9 @@
           <div class="pill"><span>📍</span><span id="destPillText">未設定目的地</span></div>
         </div>
 
-        <!-- Day Chips（含 行前待辦） -->
         <div class="dayChips" id="dayChips"></div>
 
-        <!-- 行程/地圖 分頁（只有選到 Day1~DayN 時顯示；選到行前待辦就隱藏） -->
+        <!-- 行程 / 地圖頁籤（只在底部 tab = 行程 時顯示） -->
         <div class="segTabs" id="itinerarySegTabs" style="display:none;">
           <div class="segTab active" data-seg="schedule">行程</div>
           <div class="segTab" data-seg="map">地圖</div>
@@ -663,8 +795,8 @@
     /********************
      * 0) 基礎工具
      ********************/
-    const STORAGE_KEY = "tripPlanner_full_v2_pretrip_tab";
-    const PREP_TAB_ID = "prep"; // 行前待辦固定 tab id
+    const STORAGE_KEY = "tripPlanner_full_v1";
+    const PREP_DAY_ID = "prep";
 
     function generateId(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
 
@@ -698,16 +830,6 @@
     }
 
     function safeText(s){ return (s ?? "").toString().replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
-
-    function getFirstDayId(trip){
-      return trip.days?.[0]?.id || null;
-    }
-
-    // 若目前 activeDayId 是行前待辦，且需要 dayId 的功能（記帳/地圖/天氣等），就改用 Day1
-    function resolveDayIdForDailyFeatures(trip){
-      if(trip.activeDayId === PREP_TAB_ID) return getFirstDayId(trip);
-      return trip.activeDayId;
-    }
 
     /********************
      * 1) 匯率
@@ -854,6 +976,11 @@
       const box = document.getElementById("dayWeatherBox");
       if(!box) return;
 
+      if(dayId === PREP_DAY_ID){
+        box.innerHTML = `<div class="wLoading">行前待辦不提供天氣顯示。</div>`;
+        return;
+      }
+
       const dayInfo = trip.days.find(d=>d.id === dayId);
       if(!dayInfo?.date){
         box.innerHTML = `<div class="wLoading">此日尚未設定日期，無法查詢天氣。</div>`;
@@ -981,13 +1108,17 @@
         startDate: "",
         daysCount: 4,
         days: [],
-        activeDayId: PREP_TAB_ID, // 預設停在 行前待辦
-        prep: [],                // ✅ 行前待辦清單
+        activeDayId: null,
 
         itinerary: {},
+
         flights: [],
         expenses: [],
         shopping: [],
+
+        // 行前待辦（你要加回來的）
+        prepTodos: [], // [{id,text,done}]
+
         exchangeRate: { base:"JPY", target:"TWD", rate:null, updatedAt:"" },
 
         geo: null,
@@ -1000,11 +1131,10 @@
       if(!trip.flights) trip.flights = [];
       if(!trip.expenses) trip.expenses = [];
       if(!trip.shopping) trip.shopping = [];
+      if(!trip.prepTodos) trip.prepTodos = [];
       if(!trip.exchangeRate) trip.exchangeRate = { base: (trip.currency||"JPY"), target:"TWD", rate:null, updatedAt:"" };
       if(!trip.placeCache) trip.placeCache = {};
       if(!trip.days) trip.days = [];
-      if(!trip.prep) trip.prep = [];
-      if(!trip.activeDayId) trip.activeDayId = PREP_TAB_ID;
     }
 
     function regenerateDays(trip){
@@ -1023,10 +1153,13 @@
       }
       trip.days = days;
 
-      // activeDayId 合法性
-      const validIds = [PREP_TAB_ID, ...days.map(d=>d.id)];
-      if(!validIds.includes(trip.activeDayId)){
-        trip.activeDayId = PREP_TAB_ID;
+      // activeDayId 允許是 prep；若是其他無效，回到 prep 或 day1
+      if(!trip.activeDayId){
+        trip.activeDayId = PREP_DAY_ID;
+      }
+      const valid = (trip.activeDayId === PREP_DAY_ID) || days.some(d=>d.id===trip.activeDayId);
+      if(!valid){
+        trip.activeDayId = PREP_DAY_ID;
       }
     }
 
@@ -1045,7 +1178,11 @@
           return { trips:[t], activeTripId:t.id };
         }
         obj.trips.forEach(ensureTripShape);
-        obj.trips.forEach(t=>{ if(!t.days?.length) regenerateDays(t); });
+        // 確保每個 trip 都有 days
+        obj.trips.forEach(t=>{
+          if(!t.days?.length) regenerateDays(t);
+          if(!t.activeDayId) t.activeDayId = PREP_DAY_ID;
+        });
         return obj;
       }catch(e){
         console.error(e);
@@ -1072,6 +1209,7 @@
       }
       ensureTripShape(t);
       if(!t.days?.length) regenerateDays(t);
+      if(!t.activeDayId) t.activeDayId = PREP_DAY_ID;
       return t;
     }
 
@@ -1268,16 +1406,15 @@
       }
 
       tripModalBody.querySelector("#mClearTrip").addEventListener("click", ()=>{
-        if(!confirm("確定要清空本旅程的行程、航班、記帳與購物資料嗎？")) return;
+        if(!confirm("確定要清空本旅程的行程、航班、記帳、購物與行前待辦資料嗎？")) return;
         trip.itinerary = {};
         trip.flights = [];
         trip.expenses = [];
         trip.shopping = [];
+        trip.prepTodos = [];
         trip.placeCache = {};
         trip.geo = null;
-        trip.prep = [];
         regenerateDays(trip);
-        trip.activeDayId = PREP_TAB_ID;
         saveRoot();
         renderCurrentMainView();
         closeTripModal();
@@ -1357,16 +1494,13 @@
         if(trip.exchangeRate) trip.exchangeRate.base = newCur;
       }
 
-      // 若原本沒有 day，預設停在行前
-      if(!trip.activeDayId) trip.activeDayId = PREP_TAB_ID;
-
       saveRoot();
       renderCurrentMainView();
       closeTripModal();
     });
 
     /********************
-     * 9) Day Chips（含 行前待辦）
+     * 9) Day Chips（含「行前」）
      ********************/
     function renderDayChips(){
       const trip = getCurrentTrip();
@@ -1376,32 +1510,31 @@
         return;
       }
 
-      const validIds = [PREP_TAB_ID, ...trip.days.map(d=>d.id)];
-      if(!validIds.includes(trip.activeDayId)){
-        trip.activeDayId = PREP_TAB_ID;
+      // activeDayId 合法：prep 或 day*
+      const valid = (trip.activeDayId === PREP_DAY_ID) || trip.days.some(d=>d.id===trip.activeDayId);
+      if(!valid){
+        trip.activeDayId = PREP_DAY_ID;
         saveRoot();
       }
 
-      const prepActive = trip.activeDayId === PREP_TAB_ID;
+      const prepActive = trip.activeDayId === PREP_DAY_ID;
 
-      const prepChip = `
-        <div class="chip ${prepActive?"active":""}" data-day="${PREP_TAB_ID}">
-          <strong>行前</strong>
-          <span class="chipSub">待辦清單</span>
-        </div>
-      `;
-
-      const dayChips = trip.days.map(d=>{
-        const active = d.id === trip.activeDayId;
-        return `
-          <div class="chip ${active?"active":""}" data-day="${d.id}">
-            <strong>${safeText(d.label)}</strong>
-            <span class="chipSub">${safeText(formatDateMMDD(d.date))}</span>
+      dayChipsEl.innerHTML =
+        `
+          <div class="chip prepChip ${prepActive?"active":""}" data-day="${PREP_DAY_ID}">
+            <strong>行前</strong>
+            <span>待辦清單</span>
           </div>
-        `;
-      }).join("");
-
-      dayChipsEl.innerHTML = prepChip + dayChips;
+        ` +
+        trip.days.map(d=>{
+          const active = d.id === trip.activeDayId;
+          return `
+            <div class="chip ${active?"active":""}" data-day="${d.id}">
+              <strong>${safeText(d.label)}</strong>
+              <span>${safeText(formatDateMMDD(d.date))}</span>
+            </div>
+          `;
+        }).join("");
 
       dayChipsEl.querySelectorAll(".chip").forEach(ch=>{
         ch.addEventListener("click", ()=>{
@@ -1410,111 +1543,10 @@
           renderCurrentMainView(true);
         });
       });
-
-      // 行前待辦時，不顯示 行程/地圖 seg
-      itinerarySegTabs.style.display = (currentTab === "itinerary" && !prepActive) ? "flex" : "none";
     }
 
     /********************
-     * 10) 行前待辦 View（你截圖那種）
-     ********************/
-    function renderPreTripTodoView(trip){
-      if(!Array.isArray(trip.prep)) trip.prep = [];
-
-      mainView.innerHTML = `
-        <section class="card">
-          <div class="cardHeader">
-            <div class="cardTitle">行前待辦清單</div>
-          </div>
-
-          <div class="smallLabel">新增一項行前準備</div>
-
-          <div class="row" style="margin-bottom:10px;">
-            <div class="col">
-              <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
-            </div>
-            <div style="display:flex;align-items:center;">
-              <button class="btn btnPrimary btnIcon" id="prepAddBtn" aria-label="新增">＋</button>
-            </div>
-          </div>
-
-          <div class="smallLabel">行前準備清單</div>
-          <div id="prepList"></div>
-        </section>
-      `;
-
-      const inputEl = document.getElementById("prepInput");
-      const addBtn = document.getElementById("prepAddBtn");
-      const listEl = document.getElementById("prepList");
-
-      function rerenderList(){
-        if(trip.prep.length === 0){
-          listEl.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
-          return;
-        }
-
-        listEl.innerHTML = `<div class="list">` + trip.prep.map(item=>{
-          const checked = item.done ? "checked" : "";
-          return `
-            <div class="listItem" style="align-items:center;">
-              <div class="listMain" style="display:flex;gap:10px;align-items:center;">
-                <input type="checkbox" data-prep-check="${item.id}" ${checked} style="width:18px;height:18px;" />
-                <div style="min-width:0;">
-                  <div class="itemTitle" style="margin:0;${item.done ? "text-decoration:line-through;opacity:.6;" : ""}">
-                    ${safeText(item.text || "")}
-                  </div>
-                </div>
-              </div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn btnDanger btnIcon" data-prep-del="${item.id}" aria-label="刪除">✕</button>
-              </div>
-            </div>
-          `;
-        }).join("") + `</div>`;
-
-        listEl.querySelectorAll("[data-prep-check]").forEach(cb=>{
-          cb.addEventListener("change", ()=>{
-            const id = cb.getAttribute("data-prep-check");
-            const target = trip.prep.find(x=>x.id===id);
-            if(target){
-              target.done = cb.checked;
-              saveRoot();
-              rerenderList();
-            }
-          });
-        });
-
-        listEl.querySelectorAll("[data-prep-del]").forEach(btn=>{
-          btn.addEventListener("click", ()=>{
-            const id = btn.getAttribute("data-prep-del");
-            trip.prep = trip.prep.filter(x=>x.id !== id);
-            saveRoot();
-            rerenderList();
-          });
-        });
-      }
-
-      addBtn.onclick = ()=>{
-        const text = (inputEl.value || "").trim();
-        if(!text) return;
-        trip.prep.push({ id: generateId("prep"), text, done:false });
-        inputEl.value = "";
-        saveRoot();
-        rerenderList();
-      };
-
-      inputEl.onkeydown = (e)=>{
-        if(e.key === "Enter"){
-          e.preventDefault();
-          addBtn.click();
-        }
-      };
-
-      rerenderList();
-    }
-
-    /********************
-     * 11) Leaflet 地圖（與原本一致）
+     * 10) 行程/地圖：Leaflet
      ********************/
     let itinerarySubTab = "schedule";
     let leafletMap = null;
@@ -1614,7 +1646,7 @@
     }
 
     /********************
-     * 12) 行程 Modal（與原本一致）
+     * 11) 行程 Modal
      ********************/
     let editingItId = null;
 
@@ -1634,7 +1666,7 @@
           </div>
           <div class="col autocompleteWrap">
             <div class="smallLabel">行程名稱（像 Google Maps 一樣搜尋地點）</div>
-            <input id="mItTitle" value="${safeText(titleVal)}" placeholder="例如：維多利亞港、太平山…" autocomplete="off" />
+            <input id="mItTitle" value="${safeText(titleVal)}" placeholder="例如：景點/餐廳/地標…" autocomplete="off" />
             <div id="mItSuggest" class="autocompleteList"></div>
           </div>
         </div>
@@ -1684,8 +1716,8 @@
 
     itModalSave.addEventListener("click", ()=>{
       const trip = getCurrentTrip();
-      const dayId = resolveDayIdForDailyFeatures(trip);
-      if(!dayId) return;
+      const dayId = trip.activeDayId;
+      if(!dayId || dayId === PREP_DAY_ID) return;
 
       const time = parseTimeString(document.getElementById("mItTime").value);
       const title = (document.getElementById("mItTitle").value || "").trim() || "未命名行程";
@@ -1726,7 +1758,7 @@
     });
 
     /********************
-     * 13) 航班 Modal（與原本一致）
+     * 12) 航班 Modal
      ********************/
     let editingFlightId = null;
 
@@ -1867,9 +1899,9 @@
     });
 
     /********************
-     * 14) 底部 Tab
+     * 13) 底部 Tab
      ********************/
-    let currentTab = "itinerary";
+    let currentTab = "itinerary"; // itinerary | expenses | shopping | flights
 
     const bottomTabs = document.querySelectorAll(".bottomTab");
     bottomTabs.forEach(el=>{
@@ -1879,10 +1911,7 @@
         currentTab = t;
         bottomTabs.forEach(x=>x.classList.toggle("active", x===el));
 
-        // 行程 tab 且選到 Day 才顯示 seg；選到 行前待辦就隱藏
-        const trip = getCurrentTrip();
-        itinerarySegTabs.style.display = (currentTab === "itinerary" && trip.activeDayId !== PREP_TAB_ID) ? "flex" : "none";
-
+        itinerarySegTabs.style.display = (currentTab === "itinerary") ? "flex" : "none";
         renderCurrentMainView(true);
       });
     });
@@ -1898,12 +1927,96 @@
     });
 
     /********************
-     * 15) 行程 / 地圖 View
+     * 14) View：行前待辦
+     ********************/
+    function renderPrepView(trip){
+      const todos = (trip.prepTodos || []).slice();
+
+      mainView.innerHTML = `
+        <section class="card">
+          <div class="cardHeader" style="margin-bottom:6px;">
+            <div class="cardTitle">行前準備清單</div>
+          </div>
+
+          <div class="smallLabel">新增一項行前準備</div>
+          <div class="prepAddRow">
+            <input id="prepInput" placeholder="例如：辦旅遊保險、換外幣、買網卡…" />
+            <button class="prepAddBtn" id="prepAddBtn" aria-label="新增">＋</button>
+          </div>
+
+          <div class="smallLabel" style="margin-top:12px;">行前準備清單</div>
+          <div id="prepList"></div>
+        </section>
+      `;
+
+      const listEl = document.getElementById("prepList");
+      function rerenderList(){
+        const tds = (trip.prepTodos || []);
+        if(!tds.length){
+          listEl.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
+          return;
+        }
+        listEl.innerHTML = tds.map(t=>`
+          <div class="todoItem">
+            <div class="todoCheck ${t.done?"done":""}" data-todo-toggle="${t.id}">${t.done?"✓":""}</div>
+            <div class="todoText ${t.done?"done":""}">${safeText(t.text || "")}</div>
+            <button class="todoDel" data-todo-del="${t.id}" aria-label="刪除">✕</button>
+          </div>
+        `).join("");
+
+        listEl.querySelectorAll("[data-todo-toggle]").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const id = btn.getAttribute("data-todo-toggle");
+            const target = trip.prepTodos.find(x=>x.id===id);
+            if(!target) return;
+            target.done = !target.done;
+            saveRoot();
+            rerenderList();
+          });
+        });
+
+        listEl.querySelectorAll("[data-todo-del]").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const id = btn.getAttribute("data-todo-del");
+            trip.prepTodos = trip.prepTodos.filter(x=>x.id!==id);
+            saveRoot();
+            rerenderList();
+          });
+        });
+      }
+
+      rerenderList();
+
+      const input = document.getElementById("prepInput");
+      const addBtn = document.getElementById("prepAddBtn");
+
+      function addTodo(){
+        const text = (input.value||"").trim();
+        if(!text) return;
+        trip.prepTodos.push({ id: generateId("todo"), text, done:false });
+        input.value = "";
+        saveRoot();
+        rerenderList();
+      }
+
+      addBtn.addEventListener("click", addTodo);
+      input.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter"){
+          e.preventDefault();
+          addTodo();
+        }
+      });
+    }
+
+    /********************
+     * 15) View：行程（schedule / map）
      ********************/
     function renderItinerarySchedule(trip){
-      const dayId = resolveDayIdForDailyFeatures(trip);
-      if(!dayId){
-        mainView.innerHTML = `<section class="card"><div class="empty">請先設定旅程天數。</div></section>`;
+      const dayId = trip.activeDayId;
+
+      // 行前：顯示待辦清單
+      if(dayId === PREP_DAY_ID){
+        renderPrepView(trip);
         return;
       }
 
@@ -2051,9 +2164,18 @@
     }
 
     async function renderItineraryMap(trip){
-      const dayId = resolveDayIdForDailyFeatures(trip);
-      if(!dayId){
-        mainView.innerHTML = `<section class="card"><div class="empty">請先設定旅程天數。</div></section>`;
+      const dayId = trip.activeDayId;
+
+      // 行前不顯示地圖
+      if(dayId === PREP_DAY_ID){
+        mainView.innerHTML = `
+          <section class="card">
+            <div class="cardHeader">
+              <div class="cardTitle">地圖</div>
+            </div>
+            <div class="empty">行前待辦不顯示地圖。請切回「行程」查看行前準備清單。</div>
+          </section>
+        `;
         return;
       }
 
@@ -2068,7 +2190,7 @@
           <div id="dayMap" class="mapContainer"></div>
 
           <div style="margin-top:10px;font-size:11px;color:var(--sub);">
-            若地點名稱過於簡略，可能會釘到其他位置；建議選用下拉建議或輸入更完整的地標名稱。
+            若地點名稱過於簡略（例如只打「巴黎」），可能會釘到其他國家；建議選用下拉建議或輸入更完整的地標名稱。
           </div>
         </section>
       `;
@@ -2081,7 +2203,7 @@
     }
 
     /********************
-     * 16) View：航班
+     * 16) View：航班（列表）
      ********************/
     function renderFlightsView(trip){
       let html = `
@@ -2155,25 +2277,49 @@
       }
 
       document.getElementById("openNewFlight").addEventListener("click", ()=>{
-        const dayId = resolveDayIdForDailyFeatures(trip);
-        const dayDate = trip.days.find(d=>d.id===dayId)?.date || "";
+        const dayDate = (trip.activeDayId && trip.activeDayId !== PREP_DAY_ID)
+          ? (trip.days.find(d=>d.id===trip.activeDayId)?.date || "")
+          : "";
         openFlightModal(trip, dayDate ? { date: dayDate } : null);
       });
     }
 
     /********************
-     * 17) View：記帳（保持原有邏輯）
+     * 17) View：記帳（依每日記錄）——圖二模板
      ********************/
-    let expenseFilter = "all";
+    let expenseFilter = "all"; // all | cash | card
+
+    function calcApproxTwdForExpense(e, cur, usableRate){
+      if(typeof e.approxTwd === "number" && !isNaN(e.approxTwd)) return e.approxTwd;
+      const amt = Number(e.amount)||0;
+      if(cur === "TWD") return amt;
+      if(usableRate) return amt * usableRate;
+      return 0;
+    }
 
     function renderExpensesView(trip){
       const cur = (trip.currency || "JPY").toUpperCase();
+      const dayId = trip.activeDayId;
+      const dayDate = (dayId && dayId !== PREP_DAY_ID) ? (trip.days.find(d=>d.id===dayId)?.date || "") : "";
 
-      // 如果目前停在 行前待辦，就用 Day1 當作記帳日
-      const dayId = resolveDayIdForDailyFeatures(trip);
-      const dayDate = trip.days.find(d=>d.id===dayId)?.date || "";
+      // 行前不記帳（避免混亂）
+      if(dayId === PREP_DAY_ID){
+        mainView.innerHTML = `
+          <section class="card">
+            <div class="cardHeader">
+              <div class="cardTitle">記帳（依每日記錄）</div>
+            </div>
+            <div class="empty">行前待辦不提供記帳。請切到 Day 1～Day N 再記帳。</div>
+          </section>
+        `;
+        return;
+      }
 
-      let dayList = trip.expenses.filter(e => e.dayId === dayId);
+      // 當日全部清單（用於總覽拆分）
+      const dayAll = trip.expenses.filter(e => e.dayId === dayId);
+
+      // 列表：依篩選
+      let dayList = dayAll.slice();
       if(expenseFilter === "cash") dayList = dayList.filter(e=>e.method==="cash");
       if(expenseFilter === "card") dayList = dayList.filter(e=>e.method==="card");
 
@@ -2182,13 +2328,18 @@
         ? null
         : (ex && typeof ex.rate === "number" && ex.rate > 0 && ex.base === cur && ex.target === "TWD" ? ex.rate : null);
 
-      const sumCur = dayList.reduce((s,e)=> s + (Number(e.amount)||0), 0);
-      const sumTwd = dayList.reduce((s,e)=>{
-        if(typeof e.approxTwd === "number" && !isNaN(e.approxTwd)) return s + e.approxTwd;
-        if(cur === "TWD") return s + (Number(e.amount)||0);
-        if(usableRate) return s + (Number(e.amount)||0) * usableRate;
-        return s;
-      }, 0);
+      // 總覽：不受篩選影響
+      const totalCur = dayAll.reduce((s,e)=> s + (Number(e.amount)||0), 0);
+      const totalTwd = dayAll.reduce((s,e)=> s + calcApproxTwdForExpense(e, cur, usableRate), 0);
+
+      const cashAll = dayAll.filter(e=>e.method==="cash");
+      const cardAll = dayAll.filter(e=>e.method==="card");
+
+      const cashCur = cashAll.reduce((s,e)=> s + (Number(e.amount)||0), 0);
+      const cashTwd = cashAll.reduce((s,e)=> s + calcApproxTwdForExpense(e, cur, usableRate), 0);
+
+      const cardCur = cardAll.reduce((s,e)=> s + (Number(e.amount)||0), 0);
+      const cardTwd = cardAll.reduce((s,e)=> s + calcApproxTwdForExpense(e, cur, usableRate), 0);
 
       mainView.innerHTML = `
         <section class="card">
@@ -2198,7 +2349,7 @@
           </div>
 
           <div style="font-size:11px;color:var(--sub);margin-bottom:10px;">
-            目前顯示：${safeText(dayDate ? formatDateMMDD(dayDate) : "此日未設定日期")}（${safeText(dayId||"")}${trip.activeDayId===PREP_TAB_ID ? "，因目前在行前待辦，這裡顯示 Day1" : ""}）
+            目前顯示：${safeText(dayDate ? formatDateMMDD(dayDate) : "此日未設定日期")}（${safeText(dayId)}）
           </div>
 
           <div class="row">
@@ -2213,10 +2364,25 @@
 
           <div style="margin-top:6px;font-size:11px;color:var(--sub);" id="expRateHint"></div>
 
-          <div style="margin-top:12px;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;">
-            <div style="opacity:.9;font-size:12px;">當日合計（${safeText(cur)}）</div>
-            <div style="font-size:28px;font-weight:900;line-height:1.1;">${Math.round(sumCur)}</div>
-            <div style="opacity:.9;font-size:12px;margin-top:2px;">約 TWD ${Math.round(sumTwd)}</div>
+          <!-- 圖二：總支出 + 現金/信用卡拆分 -->
+          <div class="expenseSummaryCard">
+            <div class="expenseSumTop">總支出（${safeText(cur)}）</div>
+            <div class="expenseSumMain">${Math.round(totalCur)}</div>
+            <div class="expenseSumSub">約 TWD ${Math.round(totalTwd)}</div>
+
+            <div class="expenseSplit">
+              <div class="expenseCol">
+                <div class="expenseColTitle">現金</div>
+                <div class="expenseColVal">${Math.round(cashCur)}</div>
+                <div class="expenseColSub">約 TWD ${Math.round(cashTwd)}</div>
+              </div>
+              <div class="expenseDivider"></div>
+              <div class="expenseCol">
+                <div class="expenseColTitle">信用卡</div>
+                <div class="expenseColVal">${Math.round(cardCur)}</div>
+                <div class="expenseColSub">約 TWD ${Math.round(cardTwd)}</div>
+              </div>
+            </div>
           </div>
 
           <div class="segTabs" style="margin-top:10px;">
@@ -2277,6 +2443,7 @@
         </section>
       `;
 
+      // 匯率顯示
       const rateInput = document.getElementById("expRateInput");
       const hint = document.getElementById("expRateHint");
 
@@ -2327,6 +2494,7 @@
         renderExpensesView(trip);
       });
 
+      // 新增支出
       document.getElementById("addExpBtn").addEventListener("click", ()=>{
         const date = document.getElementById("expDate").value || dayDate || "";
         const method = document.getElementById("expMethod").value;
@@ -2357,6 +2525,7 @@
         renderExpensesView(trip);
       });
 
+      // 列表
       const listEl = document.getElementById("expList");
       if(!dayList.length){
         listEl.innerHTML = `<div class="empty">本日尚未新增支出。</div>`;
@@ -2368,7 +2537,7 @@
           .map(e=>{
             const approx = (typeof e.approxTwd === "number" && !isNaN(e.approxTwd))
               ? `約 TWD ${Math.round(e.approxTwd)}`
-              : (cur==="TWD" ? "" : (usableRate ? `約 TWD ${Math.round(e.amount*usableRate)}` : ""));
+              : (cur==="TWD" ? "" : (usableRate ? `約 TWD ${Math.round((Number(e.amount)||0)*usableRate)}` : ""));
             return `
               <div class="listItem">
                 <div class="listMain">
@@ -2376,7 +2545,7 @@
                   <div class="itemTitle">
                     ${safeText(e.category || "未分類")}
                     <span class="badge">${safeText(labelOf(e.method))}</span>
-                    <span class="badge">${safeText(cur)} ${Math.round(e.amount)}</span>
+                    <span class="badge">${safeText(cur)} ${Math.round(Number(e.amount)||0)}</span>
                     ${approx ? `<span class="badge">${safeText(approx)}</span>` : ""}
                   </div>
                   ${e.note ? `<div class="note">${safeText(e.note)}</div>` : ""}
@@ -2400,7 +2569,7 @@
     }
 
     /********************
-     * 18) View：購物（與原本一致）
+     * 18) View：購物
      ********************/
     function renderShoppingView(trip){
       const cur = (trip.currency || "JPY").toUpperCase();
@@ -2515,23 +2684,17 @@
     function renderCurrentMainView(keepScroll){
       const trip = getCurrentTrip();
 
-      const isPrep = (trip.activeDayId === PREP_TAB_ID);
-
-      // 顯示/隱藏 segTabs
-      itinerarySegTabs.style.display = (currentTab === "itinerary" && !isPrep) ? "flex" : "none";
-      itinerarySegTabs.querySelectorAll(".segTab").forEach(tab=>{
-        tab.classList.toggle("active", tab.getAttribute("data-seg") === itinerarySubTab);
-      });
+      itinerarySegTabs.style.display = (currentTab === "itinerary") ? "flex" : "none";
 
       if(currentTab === "itinerary"){
-        if(isPrep){
-          renderPreTripTodoView(trip);
+        itinerarySegTabs.querySelectorAll(".segTab").forEach(tab=>{
+          tab.classList.toggle("active", tab.getAttribute("data-seg") === itinerarySubTab);
+        });
+
+        if(itinerarySubTab === "map"){
+          renderItineraryMap(trip);
         }else{
-          if(itinerarySubTab === "map"){
-            renderItineraryMap(trip);
-          }else{
-            renderItinerarySchedule(trip);
-          }
+          renderItinerarySchedule(trip);
         }
       }else if(currentTab === "flights"){
         renderFlightsView(trip);
@@ -2557,7 +2720,12 @@
       renderDayChips();
       renderDrawerTrips();
 
+      itinerarySegTabs.style.display = "flex";
       itinerarySubTab = "schedule";
+      itinerarySegTabs.querySelectorAll(".segTab").forEach(x=>{
+        x.classList.toggle("active", x.getAttribute("data-seg")==="schedule");
+      });
+
       renderCurrentMainView(false);
     })();
   </script>
