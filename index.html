@@ -1116,7 +1116,7 @@
         expenses: [],
         shopping: [],
 
-        // 行前待辦（你要加回來的）
+        // 行前待辦
         prepTodos: [], // [{id,text,done}]
 
         exchangeRate: { base:"JPY", target:"TWD", rate:null, updatedAt:"" },
@@ -1153,7 +1153,6 @@
       }
       trip.days = days;
 
-      // activeDayId 允許是 prep；若是其他無效，回到 prep 或 day1
       if(!trip.activeDayId){
         trip.activeDayId = PREP_DAY_ID;
       }
@@ -1178,7 +1177,6 @@
           return { trips:[t], activeTripId:t.id };
         }
         obj.trips.forEach(ensureTripShape);
-        // 確保每個 trip 都有 days
         obj.trips.forEach(t=>{
           if(!t.days?.length) regenerateDays(t);
           if(!t.activeDayId) t.activeDayId = PREP_DAY_ID;
@@ -1510,7 +1508,6 @@
         return;
       }
 
-      // activeDayId 合法：prep 或 day*
       const valid = (trip.activeDayId === PREP_DAY_ID) || trip.days.some(d=>d.id===trip.activeDayId);
       if(!valid){
         trip.activeDayId = PREP_DAY_ID;
@@ -1930,8 +1927,6 @@
      * 14) View：行前待辦
      ********************/
     function renderPrepView(trip){
-      const todos = (trip.prepTodos || []).slice();
-
       mainView.innerHTML = `
         <section class="card">
           <div class="cardHeader" style="margin-bottom:6px;">
@@ -1953,7 +1948,7 @@
       function rerenderList(){
         const tds = (trip.prepTodos || []);
         if(!tds.length){
-          listEl.innerHTML = `<div class="empty">目前沒有行前待辦，可以在下方新增。</div>`;
+          listEl.innerHTML = `<div class="empty">目前沒有行前待辦，可以在上方新增。</div>`;
           return;
         }
         listEl.innerHTML = tds.map(t=>`
@@ -2014,7 +2009,6 @@
     function renderItinerarySchedule(trip){
       const dayId = trip.activeDayId;
 
-      // 行前：顯示待辦清單
       if(dayId === PREP_DAY_ID){
         renderPrepView(trip);
         return;
@@ -2166,7 +2160,6 @@
     async function renderItineraryMap(trip){
       const dayId = trip.activeDayId;
 
-      // 行前不顯示地圖
       if(dayId === PREP_DAY_ID){
         mainView.innerHTML = `
           <section class="card">
@@ -2285,7 +2278,7 @@
     }
 
     /********************
-     * 17) View：記帳（依每日記錄）——圖二模板
+     * 17) View：記帳（依每日記錄）——圖二模板（含行前）
      ********************/
     let expenseFilter = "all"; // all | cash | card
 
@@ -2300,22 +2293,14 @@
     function renderExpensesView(trip){
       const cur = (trip.currency || "JPY").toUpperCase();
       const dayId = trip.activeDayId;
-      const dayDate = (dayId && dayId !== PREP_DAY_ID) ? (trip.days.find(d=>d.id===dayId)?.date || "") : "";
 
-      // 行前不記帳（避免混亂）
-      if(dayId === PREP_DAY_ID){
-        mainView.innerHTML = `
-          <section class="card">
-            <div class="cardHeader">
-              <div class="cardTitle">記帳（依每日記錄）</div>
-            </div>
-            <div class="empty">行前待辦不提供記帳。請切到 Day 1～Day N 再記帳。</div>
-          </section>
-        `;
-        return;
-      }
+      const dayDate = (dayId && dayId !== PREP_DAY_ID)
+        ? (trip.days.find(d=>d.id===dayId)?.date || "")
+        : ""; // 行前：預設不帶日期，讓你手動填
 
-      // 當日全部清單（用於總覽拆分）
+      const dayLabel = (dayId === PREP_DAY_ID) ? "行前（待辦清單）" : dayId;
+
+      // 當日（或行前）全部清單（用於總覽拆分）
       const dayAll = trip.expenses.filter(e => e.dayId === dayId);
 
       // 列表：依篩選
@@ -2349,7 +2334,7 @@
           </div>
 
           <div style="font-size:11px;color:var(--sub);margin-bottom:10px;">
-            目前顯示：${safeText(dayDate ? formatDateMMDD(dayDate) : "此日未設定日期")}（${safeText(dayId)}）
+            目前顯示：${safeText(dayDate ? formatDateMMDD(dayDate) : "日期可自行填寫")}（${safeText(dayLabel)}）
           </div>
 
           <div class="row">
@@ -2399,7 +2384,7 @@
 
             <div class="row">
               <div class="col">
-                <div class="smallLabel">日期（自動帶入當日）</div>
+                <div class="smallLabel">日期（${dayId===PREP_DAY_ID ? "行前可手動選" : "自動帶入當日"}）</div>
                 <input type="date" id="expDate" value="${safeText(dayDate)}" />
               </div>
               <div class="col">
@@ -2496,7 +2481,7 @@
 
       // 新增支出
       document.getElementById("addExpBtn").addEventListener("click", ()=>{
-        const date = document.getElementById("expDate").value || dayDate || "";
+        const date = document.getElementById("expDate").value || ""; // 行前可空白；Day1~DayN 也允許手動改
         const method = document.getElementById("expMethod").value;
         const amount = parseFloat(document.getElementById("expAmount").value);
         const category = (document.getElementById("expCategory").value||"").trim();
@@ -2512,7 +2497,7 @@
 
         trip.expenses.push({
           id: generateId("exp"),
-          dayId,
+          dayId,      // 這裡會是 prep 或 day1/day2...
           date,
           method,
           amount,
@@ -2528,7 +2513,7 @@
       // 列表
       const listEl = document.getElementById("expList");
       if(!dayList.length){
-        listEl.innerHTML = `<div class="empty">本日尚未新增支出。</div>`;
+        listEl.innerHTML = `<div class="empty">目前尚未新增支出。</div>`;
       }else{
         const labelOf = (m)=> m==="cash"?"現金":(m==="card"?"信用卡":"其他");
         listEl.innerHTML = `<div class="list">` + dayList
@@ -2541,7 +2526,7 @@
             return `
               <div class="listItem">
                 <div class="listMain">
-                  <div class="meta">${safeText(e.date ? formatDateMMDD(e.date) : "")}</div>
+                  <div class="meta">${safeText(e.date ? formatDateMMDD(e.date) : "日期未填")}</div>
                   <div class="itemTitle">
                     ${safeText(e.category || "未分類")}
                     <span class="badge">${safeText(labelOf(e.method))}</span>
@@ -2699,7 +2684,7 @@
       }else if(currentTab === "flights"){
         renderFlightsView(trip);
       }else if(currentTab === "expenses"){
-        renderExpensesView(trip);
+        renderExpensesView(trip);  // ✅ 行前（prep）也能進來記帳了
       }else if(currentTab === "shopping"){
         renderShoppingView(trip);
       }
